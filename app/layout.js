@@ -1,6 +1,23 @@
 import './globals.css';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://where-pepe.vercel.app';
+// Resolve a valid absolute site URL no matter how the env var is set.
+// Accepts values with or without a protocol; falls back safely so the build
+// never crashes on `new URL(...)` (which broke Vercel's /_not-found prerender).
+function resolveSiteUrl() {
+  let raw =
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '') ||
+    'https://where-pepe.vercel.app';
+  raw = String(raw).trim();
+  if (!/^https?:\/\//i.test(raw)) raw = `https://${raw}`;
+  try {
+    return new URL(raw).origin;
+  } catch {
+    return 'https://where-pepe.vercel.app';
+  }
+}
+
+const SITE_URL = resolveSiteUrl();
 
 export const metadata = {
   metadataBase: new URL(SITE_URL),

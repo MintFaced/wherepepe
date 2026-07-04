@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCatalog } from '../../../lib/catalog';
 import { getCollectionFloor, getWrappedStatus, hasOpenSeaKey } from '../../../lib/wrapped';
+import { getEmblemVaultedTotal, hasEmblemKey } from '../../../lib/emblem';
 import { getRates } from '../../../lib/rates';
 import { getNative } from '../../../lib/native';
 
@@ -13,11 +14,12 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   const out = { time: new Date().toISOString() };
 
-  const [catalog, collection, rates, wrapped, sampleNative] = await Promise.all([
+  const [catalog, collection, rates, wrapped, emblem, sampleNative] = await Promise.all([
     getCatalog().then((c) => ({ ok: true, count: c.length })).catch((e) => ({ ok: false, error: String(e) })),
     getCollectionFloor().catch((e) => ({ ok: false, error: String(e) })),
     getRates().catch((e) => ({ ok: false, error: String(e) })),
     getWrappedStatus().catch((e) => ({ ok: false, error: String(e) })),
+    getEmblemVaultedTotal().catch((e) => ({ ok: false, error: String(e) })),
     getNative('RAREPEPE').catch((e) => ({ error: String(e) })),
   ]);
 
@@ -31,11 +33,13 @@ export async function GET() {
     supply: sampleNative?.supply ?? null,
   };
   out.wrappedCounts = wrapped; // { hasKey, ok, traitUsed, cardsMatched, samples }
+  out.emblem = { hasKey: hasEmblemKey(), ok: Boolean(emblem?.ok), vaultedTotal: emblem?.total ?? null };
 
   out.summary = {
     nativeReady: Boolean(catalog.ok && collection && rates?.ok),
     openSeaKey: hasOpenSeaKey(),
     perCardWrappedReady: Boolean(wrapped?.ok && (wrapped?.cardsMatched || 0) > 0),
+    emblemReady: Boolean(emblem?.ok),
   };
 
   return NextResponse.json(out, {

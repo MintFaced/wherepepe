@@ -8,7 +8,7 @@ import { fmtEth, fmtSupply, fmtPct } from '../../lib/format';
 const PAGE = 60;
 const BATCH = 30;
 
-export default function Gallery({ initialCards, collectionFloorEth, rates }) {
+export default function Gallery({ initialCards, collectionFloorEth, emblemVaultedTotal, rates }) {
   const cards = initialCards || [];
   const [query, setQuery] = useState('');
   const [series, setSeries] = useState('all');
@@ -122,6 +122,12 @@ export default function Gallery({ initialCards, collectionFloorEth, rates }) {
   const headerRight = (
     <>
       <div className="header-stat"><b>{cards.length.toLocaleString()}</b><span>Cards</span></div>
+      {emblemVaultedTotal != null && (
+        <div className="header-stat">
+          <b style={{ color: 'var(--eth)' }}>{emblemVaultedTotal.toLocaleString()}</b>
+          <span>Wrapped · Emblem</span>
+        </div>
+      )}
       <div className="header-stat"><b>{fmtEth(collectionFloorEth)}</b><span>Emblem floor</span></div>
     </>
   );
