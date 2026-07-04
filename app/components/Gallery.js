@@ -69,6 +69,7 @@ export default function Gallery({ initialCards, emblemVaultedTotal }) {
       switch (sort) {
         case 'savings': return (floors?.[b.asset]?.savingsPct ?? -1) - (floors?.[a.asset]?.savingsPct ?? -1);
         case 'cheapest': return minFloor(a.asset) - minFloor(b.asset);
+        case 'offer': return (floors?.[b.asset]?.highestOfferEth ?? -1) - (floors?.[a.asset]?.highestOfferEth ?? -1);
         case 'name': return a.asset.localeCompare(b.asset);
         default: return (a.series - b.series) || (a.card - b.card);
       }
@@ -139,6 +140,7 @@ export default function Gallery({ initialCards, emblemVaultedTotal }) {
             <option value="series">Sort: Series</option>
             {available && <option value="savings">Sort: Biggest savings</option>}
             {available && <option value="cheapest">Sort: Cheapest floor</option>}
+            {available && <option value="offer">Sort: Highest offer</option>}
             <option value="name">Sort: Name A–Z</option>
           </select>
 

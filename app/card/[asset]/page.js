@@ -86,6 +86,7 @@ export default async function CardPage({ params }) {
             </div>
 
             <div className="meta-list">
+              <div className="row"><span>Highest offer (Emblem)</span><b style={cmp.highestOfferEth != null ? { color: 'var(--eth)' } : undefined}>{fmtEth(cmp.highestOfferEth)}</b></div>
               <div className="row"><span>Total supply (issued)</span><b>{fmtSupply(supply)}</b></div>
               <div className="row"><span>Native holders</span><b>{fmtInt(native.holders)}</b></div>
               <div className="row"><span>Artist</span><b>{meta.artist || '—'}</b></div>

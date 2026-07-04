@@ -134,6 +134,28 @@ Hit **`/api/status`** on your deployed URL — a one-glance health + wiring chec
 
 ---
 
+## ChatPepe (`/chat`)
+
+A wallet-gated global chat. Users connect an Ethereum wallet, sign one message
+(no gas) to prove ownership, receive a deterministic Pepe identity
+(`SmugPepe·a3f2` + avatar), and chat. Wallets holding a Rare Pepe get a
+**HOLDER** badge. Messages are polled every ~3s.
+
+**Setup (one-time):**
+1. In Vercel: **Storage → Create Database → KV (Upstash Redis)**, then connect it
+   to this project. That injects `KV_REST_API_URL` + `KV_REST_API_TOKEN`.
+2. Add env var **`CHAT_SECRET`** (any long random string — `openssl rand -hex 32`).
+3. Redeploy. Until KV is set, `/chat` shows a "not configured" notice and stays
+   read-only — the rest of the site is unaffected.
+
+**How it works:** `POST /api/chat/login` verifies the signature (viem) and issues
+a stateless HMAC session token (carrying the address + holder flag). `POST
+/api/chat/send` validates the token, rate-limits (1.5s/wallet), sanitizes, and
+appends to a capped Redis list (last 200). `GET /api/chat/messages` returns
+them. Identities and sessions never touch the browser as secrets.
+
+---
+
 ## Architecture
 
 ```
