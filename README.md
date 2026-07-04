@@ -141,7 +141,13 @@ one Rare Pepe** (checked against the OpenSea `rare-pepe-curated` collection).
 Users connect an Ethereum wallet, sign one message (no gas) to prove ownership,
 receive a deterministic Pepe identity (`SmugPepe·a3f2` + avatar) and a **HOLDER**
 badge, and chat. The gate is enforced **server-side** (`/api/chat/send` rejects
-non-holders with 403), not just in the UI. Messages poll every ~3s.
+non-holders with 403), not just in the UI. Non-holders see the **cheapest Rare
+Pepe to buy** (with a direct link) instead of a dead end. Members can **edit
+their profile** — set a custom handle and pick a **PFP from a Rare Pepe they
+own**. Messages poll every ~3s.
+
+> The floor snapshot (below) is also stored in this same KV — the cron writes
+> it, reads read it, and a failed sweep never wipes the last-good data.
 
 **Setup (one-time):**
 1. In Vercel: **Storage → Create Database → KV (Upstash Redis)**, then connect it

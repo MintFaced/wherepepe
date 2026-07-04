@@ -321,3 +321,38 @@ button { font-family: inherit; cursor: pointer; }
 .cheapest-meta { font-size: 12px; color: var(--text-faint); font-family: var(--mono); }
 .cheapest-price { font-family: var(--mono); font-size: 18px; font-weight: 700; color: var(--eth); margin-top: 4px; }
 .cheapest-buy { font-size: 13px; font-weight: 700; color: var(--pepe-bright); margin-top: 3px; }
+
+/* Avatars as images (PFPs) */
+img.avatar { object-fit: cover; }
+
+/* ─── Profile modal ───────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  background: #06080699; backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+}
+.modal {
+  width: 100%; max-width: 440px;
+  background: var(--bg-raised); border: 1px solid var(--border-solid);
+  border-radius: var(--radius); padding: 22px; box-shadow: var(--shadow);
+}
+.modal h3 { font-size: 18px; margin-bottom: 14px; }
+.modal-label { display: block; font-size: 12px; color: var(--text-dim); font-weight: 600; margin: 14px 0 6px; }
+.modal-input {
+  width: 100%; background: var(--bg); border: 1px solid var(--border-solid);
+  border-radius: var(--radius-sm); color: var(--text); padding: 0 12px; height: 40px; font-size: 15px; outline: none;
+}
+.modal-input:focus { border-color: var(--pepe-deep); }
+
+.pfp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 8px; max-height: 220px; overflow-y: auto; padding: 2px; }
+.pfp-opt {
+  background: var(--bg); border: 2px solid var(--border-solid); border-radius: 10px;
+  padding: 6px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; aspect-ratio: 5/7;
+}
+.pfp-opt.sel { border-color: var(--pepe); }
+.pfp-opt img { width: 100%; height: 100%; object-fit: contain; border-radius: 6px; flex: 1; min-height: 0; }
+.pfp-opt .avatar { width: 40px; height: 40px; margin-top: 8px; }
+.pfp-opt-label { font-size: 10px; color: var(--text-faint); }
+.pfp-empty { grid-column: 1 / -1; color: var(--text-faint); font-size: 13px; padding: 12px; text-align: center; }
+
+.modal-actions { display: flex; justify-content: flex-end; align-items: center; gap: 16px; margin-top: 18px; }

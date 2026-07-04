@@ -18,6 +18,12 @@ export default function ChatRoom() {
   const [configured, setConfigured] = useState(true);
   const [sending, setSending] = useState(false);
   const [cheapest, setCheapest] = useState(null);
+  const [showProfile, setShowProfile] = useState(false);
+  const [myPepes, setMyPepes] = useState([]);
+  const [handleInput, setHandleInput] = useState('');
+  const [selectedPfp, setSelectedPfp] = useState(null);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [profileErr, setProfileErr] = useState('');
   const listRef = useRef(null);
   const atBottomRef = useRef(true);
 
@@ -104,6 +110,37 @@ export default function ChatRoom() {
     try { localStorage.removeItem(TOKEN_KEY); localStorage.removeItem(IDENT_KEY); } catch {}
   }
 
+  function openProfile() {
+    setProfileErr('');
+    setHandleInput(identity?.handle || '');
+    setSelectedPfp(identity?.pfpAsset || null);
+    setShowProfile(true);
+    if (myPepes.length === 0) {
+      fetch(`/api/chat/my-pepes?token=${encodeURIComponent(token)}`)
+        .then((r) => r.json()).then((d) => { if (d.ok) setMyPepes(d.pepes || []); }).catch(() => {});
+    }
+  }
+
+  async function saveProfile() {
+    setSavingProfile(true); setProfileErr('');
+    try {
+      const res = await fetch('/api/chat/profile', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ token, handle: handleInput, pfpAsset: selectedPfp }),
+      });
+      const data = await res.json();
+      if (!data.ok) { setProfileErr(data.error || 'Could not save.'); return; }
+      setIdentity(data.identity);
+      try { localStorage.setItem(IDENT_KEY, JSON.stringify(data.identity)); } catch {}
+      setShowProfile(false);
+    } catch {
+      setProfileErr('Network error.');
+    } finally {
+      setSavingProfile(false);
+    }
+  }
+
   async function send(e) {
     e?.preventDefault();
     const text = input.trim();
@@ -162,7 +199,9 @@ export default function ChatRoom() {
           {status === 'ready' && identity && identity.holder ? (
             <form className="chat-input" onSubmit={send}>
               <span className="chat-me">
-                <span className="avatar" style={{ background: identity.avatar }} />
+                {identity.pfp
+                  ? <img className="avatar" src={identity.pfp} alt="" />
+                  : <span className="avatar" style={{ background: identity.avatar }} />}
                 <span className="chat-me-name">{identity.handle}<span className="holder">HOLDER</span></span>
               </span>
               <input
@@ -207,7 +246,44 @@ export default function ChatRoom() {
         {error ? <div className="chat-error">{error}</div> : null}
         {status === 'ready' && identity && identity.holder ? (
           <div className="chat-foot">
-            Chatting as <b>{identity.handle}</b> · <button className="linkbtn" onClick={signOut}>sign out</button>
+            Chatting as <b>{identity.handle}</b> · <button className="linkbtn" onClick={openProfile}>edit profile</button> · <button className="linkbtn" onClick={signOut}>sign out</button>
+          </div>
+        ) : null}
+
+        {showProfile && identity ? (
+          <div className="modal-overlay" onClick={() => setShowProfile(false)}>
+            <div className="modal" onClick={(e) => e.stopPropagation()}>
+              <h3>Edit profile</h3>
+
+              <label className="modal-label">Handle</label>
+              <input
+                className="modal-input"
+                value={handleInput}
+                onChange={(e) => setHandleInput(e.target.value)}
+                maxLength={24}
+                placeholder="2–24 characters"
+              />
+
+              <label className="modal-label">Profile picture — pick one of your Rare Pepes</label>
+              <div className="pfp-grid">
+                <button type="button" className={`pfp-opt${!selectedPfp ? ' sel' : ''}`} onClick={() => setSelectedPfp(null)} title="Default">
+                  <span className="avatar" style={{ background: identity.avatar }} />
+                  <span className="pfp-opt-label">Default</span>
+                </button>
+                {myPepes.map((p) => (
+                  <button type="button" key={p.asset} className={`pfp-opt${selectedPfp === p.asset ? ' sel' : ''}`} onClick={() => setSelectedPfp(p.asset)} title={p.asset}>
+                    {p.image ? <img src={p.image} alt={p.asset} /> : <span className="avatar" />}
+                  </button>
+                ))}
+                {myPepes.length === 0 && <div className="pfp-empty">Loading your Rare Pepes…</div>}
+              </div>
+
+              {profileErr ? <div className="chat-error">{profileErr}</div> : null}
+              <div className="modal-actions">
+                <button className="linkbtn" onClick={() => setShowProfile(false)}>Cancel</button>
+                <button className="connect-btn" onClick={saveProfile} disabled={savingProfile}>{savingProfile ? 'Saving…' : 'Save'}</button>
+              </div>
+            </div>
           </div>
         ) : null}
       </main>
@@ -219,7 +295,9 @@ function Message({ m, mine }) {
   const time = new Date(m.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   return (
     <div className={`msg${mine ? ' msg--mine' : ''}`}>
-      <span className="avatar" style={{ background: m.avatar }} aria-hidden="true" />
+      {m.pfp
+        ? <img className="avatar" src={m.pfp} alt="" />
+        : <span className="avatar" style={{ background: m.avatar }} aria-hidden="true" />}
       <div className="msg-body">
         <div className="msg-meta">
           <span className="msg-handle">{m.handle}</span>
