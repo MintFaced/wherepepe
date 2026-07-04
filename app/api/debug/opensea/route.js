@@ -4,9 +4,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 // TEMPORARY diagnostic — reveals the real OpenSea data model for the
-// rare-pepe-curated collection so we can build the per-card count/floor parser
-// against reality. Returns only structural samples (names, traits, a listing),
-// never secrets. Safe to delete once the sweep is finalized.
+// rare-pepe-curated collection. Returns only structural samples, never secrets.
 const SLUG = 'rare-pepe-curated';
 const OS = 'https://api.opensea.io/api/v2';
 
@@ -17,39 +15,32 @@ export async function GET() {
   const out = { slug: SLUG };
 
   try {
-    // 1) A page of NFTs — do names/traits identify the card?
-    const nftsRes = await fetch(`${OS}/collection/${SLUG}/nfts?limit=8`, { headers: h, signal: AbortSignal.timeout(15000) });
-    const nftsData = await nftsRes.json();
-    out.nftsStatus = nftsRes.status;
-    out.nftsSample = (nftsData.nfts || []).map((n) => ({
-      identifier: n.identifier,
-      name: n.name,
-      traits: n.traits, // may be absent on the list endpoint
-    }));
-    out.nftsNext = Boolean(nftsData.next);
-
-    // 2) A single NFT's full detail (traits usually live here, not on the list).
-    const firstId = out.nftsSample[0]?.identifier;
-    if (firstId) {
-      const one = await fetch(`${OS}/collection/${SLUG}/nfts/${firstId}`, { headers: h, signal: AbortSignal.timeout(15000) })
-        .then((r) => r.json()).catch(() => null);
-      out.singleNftTraits = one?.nft?.traits ?? null;
-      out.singleNftName = one?.nft?.name ?? null;
-    }
-
-    // 3) A page of best listings — shape of price + how the NFT is referenced.
-    const listRes = await fetch(`${OS}/listings/collection/${SLUG}/best?limit=3`, { headers: h, signal: AbortSignal.timeout(15000) });
+    // Full raw first listing (minus the huge protocol_data blob) — does it
+    // carry the asset name, so we can skip full NFT enumeration for floors?
+    const listRes = await fetch(`${OS}/listings/collection/${SLUG}/best?limit=1`, { headers: h, signal: AbortSignal.timeout(15000) });
     const listData = await listRes.json();
     out.listingsStatus = listRes.status;
-    out.listingsSample = (listData.listings || []).map((l) => ({
-      priceValue: l?.price?.current?.value,
-      priceCurrency: l?.price?.current?.currency,
-      priceDecimals: l?.price?.current?.decimals,
-      offerToken: l?.protocol_data?.parameters?.offer?.[0]?.token,
-      offerTokenId: l?.protocol_data?.parameters?.offer?.[0]?.identifierOrCriteria,
-    }));
-    out.listingsKeys = (listData.listings || [])[0] ? Object.keys(listData.listings[0]) : [];
-    out.totalListingsHint = listData.next ? 'more-pages' : 'single-page';
+    const first = (listData.listings || [])[0];
+    if (first) {
+      const { protocol_data, ...rest } = first;
+      out.rawFirstListing = rest;
+      out.offerTokenId = protocol_data?.parameters?.offer?.[0]?.identifierOrCriteria ?? null;
+    }
+
+    // How many active listings total? (Caps at 12 pages to stay within timeout.)
+    let cursor = null, pages = 0, count = 0, capped = false;
+    do {
+      const url = `${OS}/listings/collection/${SLUG}/best?limit=100${cursor ? `&next=${cursor}` : ''}`;
+      const r = await fetch(url, { headers: h, signal: AbortSignal.timeout(15000) });
+      const d = await r.json();
+      count += (d.listings || []).length;
+      cursor = d.next || null;
+      pages += 1;
+      if (pages >= 12) { capped = Boolean(cursor); break; }
+    } while (cursor);
+    out.listingCount = count;
+    out.listingCountCapped = capped; // true => there are more than we counted
+
     out.ok = true;
   } catch (e) {
     out.ok = false;
