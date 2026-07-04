@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Header from './Header';
+import { fmtEth } from '../../lib/format';
 
 const POLL_MS = 3000;
 const TOKEN_KEY = 'chatpepe:token';
@@ -16,6 +17,7 @@ export default function ChatRoom() {
   const [error, setError] = useState('');
   const [configured, setConfigured] = useState(true);
   const [sending, setSending] = useState(false);
+  const [cheapest, setCheapest] = useState(null);
   const listRef = useRef(null);
   const atBottomRef = useRef(true);
 
@@ -43,6 +45,13 @@ export default function ChatRoom() {
     const iv = setInterval(loadMessages, POLL_MS);
     return () => clearInterval(iv);
   }, [loadMessages]);
+
+  // For non-holders: fetch the cheapest Pepe they could buy to get in.
+  useEffect(() => {
+    if (status === 'ready' && identity && !identity.holder && !cheapest) {
+      fetch('/api/chat/cheapest').then((r) => r.json()).then((d) => { if (d.ok) setCheapest(d); }).catch(() => {});
+    }
+  }, [status, identity, cheapest]);
 
   // Autoscroll if the user is at the bottom.
   useEffect(() => {
@@ -110,6 +119,7 @@ export default function ChatRoom() {
       const data = await res.json();
       if (!data.ok) {
         if (res.status === 401) { signOut(); setError('Session expired — reconnect your wallet.'); }
+        else if (res.status === 403) setError('Holders only — you need a Rare Pepe to post.');
         else if (res.status === 429) setError('Easy — one message at a time.');
         else setError(data.error || 'Could not send.');
         return;
@@ -130,7 +140,7 @@ export default function ChatRoom() {
       <main className="container chat-wrap">
         <div className="chat-head">
           <h1>🐸 ChatPepe</h1>
-          <p>Connect your wallet, get a Pepe identity, and chat about rares. Be excellent to each other.</p>
+          <p>Hold a Rare Pepe to post; anyone can read. Connect your wallet, get a Pepe identity, and chat about rares. Be excellent to each other.</p>
         </div>
 
         {!configured ? (
@@ -149,11 +159,11 @@ export default function ChatRoom() {
             ))}
           </div>
 
-          {status === 'ready' && identity ? (
+          {status === 'ready' && identity && identity.holder ? (
             <form className="chat-input" onSubmit={send}>
               <span className="chat-me">
                 <span className="avatar" style={{ background: identity.avatar }} />
-                <span className="chat-me-name">{identity.handle}{identity.holder && <span className="holder">HOLDER</span>}</span>
+                <span className="chat-me-name">{identity.handle}<span className="holder">HOLDER</span></span>
               </span>
               <input
                 value={input}
@@ -164,18 +174,38 @@ export default function ChatRoom() {
               />
               <button type="submit" disabled={sending || !input.trim()}>Send</button>
             </form>
+          ) : status === 'ready' && identity ? (
+            <div className="chat-connect">
+              <div className="chat-gate">🐸 Hold a Rare Pepe to post — here’s the cheapest way in:</div>
+              {cheapest ? (
+                <a className="cheapest-card" href={cheapest.buyUrl} target="_blank" rel="noopener noreferrer">
+                  {cheapest.image ? <img src={cheapest.image} alt={cheapest.title} /> : null}
+                  <div className="cheapest-info">
+                    <div className="cheapest-name">{cheapest.title}</div>
+                    <div className="cheapest-meta">Series {cheapest.series} · Card {cheapest.card}</div>
+                    <div className="cheapest-price">{fmtEth(cheapest.floorEth)}</div>
+                    <div className="cheapest-buy">Buy on OpenSea ↗</div>
+                  </div>
+                </a>
+              ) : (
+                <a className="connect-btn" href="https://opensea.io/collection/rare-pepe-curated?sortAscending=true&sortBy=UNIT_PRICE" target="_blank" rel="noopener noreferrer">Browse Rare Pepes ↗</a>
+              )}
+              <span className="chat-connect-note">
+                Once you own one, <button className="linkbtn" onClick={connect}>re-check</button> · connected as {identity.handle} · <button className="linkbtn" onClick={signOut}>sign out</button>
+              </span>
+            </div>
           ) : (
             <div className="chat-connect">
               <button className="connect-btn" onClick={connect} disabled={status === 'connecting'}>
                 {status === 'connecting' ? 'Check your wallet…' : 'Connect wallet to chat'}
               </button>
-              <span className="chat-connect-note">One free signature — no gas, proves it’s your wallet.</span>
+              <span className="chat-connect-note">Holders post, everyone reads · one free signature, no gas.</span>
             </div>
           )}
         </div>
 
         {error ? <div className="chat-error">{error}</div> : null}
-        {status === 'ready' && identity ? (
+        {status === 'ready' && identity && identity.holder ? (
           <div className="chat-foot">
             Chatting as <b>{identity.handle}</b> · <button className="linkbtn" onClick={signOut}>sign out</button>
           </div>

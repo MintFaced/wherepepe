@@ -136,10 +136,12 @@ Hit **`/api/status`** on your deployed URL — a one-glance health + wiring chec
 
 ## ChatPepe (`/chat`)
 
-A wallet-gated global chat. Users connect an Ethereum wallet, sign one message
-(no gas) to prove ownership, receive a deterministic Pepe identity
-(`SmugPepe·a3f2` + avatar), and chat. Wallets holding a Rare Pepe get a
-**HOLDER** badge. Messages are polled every ~3s.
+A **token-gated** global chat. Anyone can read; to **post you must hold at least
+one Rare Pepe** (checked against the OpenSea `rare-pepe-curated` collection).
+Users connect an Ethereum wallet, sign one message (no gas) to prove ownership,
+receive a deterministic Pepe identity (`SmugPepe·a3f2` + avatar) and a **HOLDER**
+badge, and chat. The gate is enforced **server-side** (`/api/chat/send` rejects
+non-holders with 403), not just in the UI. Messages poll every ~3s.
 
 **Setup (one-time):**
 1. In Vercel: **Storage → Create Database → KV (Upstash Redis)**, then connect it

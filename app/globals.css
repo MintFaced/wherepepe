@@ -305,3 +305,19 @@ button { font-family: inherit; cursor: pointer; }
 .chat-error { margin-top: 12px; color: var(--danger); font-size: 14px; }
 .chat-foot { margin-top: 12px; color: var(--text-faint); font-size: 13px; }
 .linkbtn { background: none; border: none; color: var(--pepe); font: inherit; cursor: pointer; padding: 0; text-decoration: underline; }
+
+.chat-gate { color: var(--btc); font-weight: 600; font-size: 14px; text-align: center; }
+
+/* ChatPepe: cheapest-way-in card for non-holders */
+.cheapest-card {
+  display: flex; gap: 14px; width: 100%; max-width: 400px;
+  background: var(--bg); border: 1px solid var(--border-solid);
+  border-radius: var(--radius); padding: 12px; transition: border-color 0.12s ease;
+}
+.cheapest-card:hover { border-color: var(--pepe-deep); }
+.cheapest-card img { width: 74px; height: 104px; object-fit: contain; border-radius: 8px; background: #0d120d; flex: 0 0 74px; }
+.cheapest-info { display: flex; flex-direction: column; justify-content: center; gap: 2px; min-width: 0; }
+.cheapest-name { font-weight: 700; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cheapest-meta { font-size: 12px; color: var(--text-faint); font-family: var(--mono); }
+.cheapest-price { font-family: var(--mono); font-size: 18px; font-weight: 700; color: var(--eth); margin-top: 4px; }
+.cheapest-buy { font-size: 13px; font-weight: 700; color: var(--pepe-bright); margin-top: 3px; }

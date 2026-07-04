@@ -18,6 +18,11 @@ export async function POST(request) {
   const session = verifyToken(token);
   if (!session) return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
 
+  // Token-gated: must hold at least one Rare Pepe to post.
+  if (!session.holder) {
+    return NextResponse.json({ ok: false, error: 'holders-only' }, { status: 403 });
+  }
+
   const clean = String(text || '').replace(CONTROL, ' ').replace(/\s+/g, ' ').trim();
   if (!clean) return NextResponse.json({ ok: false, error: 'empty' }, { status: 400 });
   if (clean.length > MAX_TEXT) return NextResponse.json({ ok: false, error: 'too long' }, { status: 400 });
