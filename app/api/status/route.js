@@ -7,6 +7,7 @@ import { getNative } from '../../../lib/native';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+export const maxDuration = 30;
 
 // Health + wiring check. Hit /api/status after deploy to confirm every data
 // source resolves — especially the OpenSea per-card wrapped counts, which
