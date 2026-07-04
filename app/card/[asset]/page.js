@@ -41,8 +41,8 @@ export default async function CardPage({ params }) {
   const cheaper = cmp.cheaper;
 
   const verdict =
-    cheaper === 'wrapped' ? { cls: 'wrapped', label: 'Cheaper wrapped — Emblem Vault' }
-    : cheaper === 'native' ? { cls: 'native', label: 'Cheaper native — Counterparty' }
+    cheaper === 'wrapped' ? { cls: 'wrapped', label: 'Value on Emblem — cheaper wrapped' }
+    : cheaper === 'native' ? { cls: 'native', label: 'Value on Native — cheaper on Counterparty' }
     : { cls: 'none', label: (nativeEth != null || wrappedEth != null) ? 'Listed on one side only' : 'No active listings' };
 
   const nativeAmt =

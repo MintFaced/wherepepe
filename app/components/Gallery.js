@@ -118,8 +118,8 @@ export default function Gallery({ initialCards, emblemVaultedTotal }) {
           {summary && (
             <p className="result-meta" style={{ marginTop: 12 }}>
               {summary.comparable.toLocaleString()} cards priced on both sides ·{' '}
-              <span style={{ color: 'var(--eth)' }}>{summary.wrapped.toLocaleString()} cheaper on Emblem</span> ·{' '}
-              <span style={{ color: 'var(--btc)' }}>{summary.native.toLocaleString()} cheaper native</span>
+              <span style={{ color: 'var(--eth)' }}>{summary.wrapped.toLocaleString()} value on Emblem</span> ·{' '}
+              <span style={{ color: 'var(--btc)' }}>{summary.native.toLocaleString()} value on Native</span>
             </p>
           )}
         </div>
@@ -144,8 +144,8 @@ export default function Gallery({ initialCards, emblemVaultedTotal }) {
 
           <div className="toggle-group" role="group" aria-label="Cheaper-side filter">
             <button className={view === 'all' ? 'active' : ''} onClick={() => setView('all')}>All</button>
-            <button className={view === 'wrapped' ? 'active' : ''} disabled={!available} title={toggleTitle} onClick={() => setView('wrapped')}>Cheaper on Emblem</button>
-            <button className={view === 'native' ? 'active' : ''} disabled={!available} title={toggleTitle} onClick={() => setView('native')}>Cheaper native</button>
+            <button className={view === 'wrapped' ? 'active' : ''} disabled={!available} title={toggleTitle} onClick={() => setView('wrapped')}>Value on Emblem</button>
+            <button className={view === 'native' ? 'active' : ''} disabled={!available} title={toggleTitle} onClick={() => setView('native')}>Value on Native</button>
           </div>
         </div>
 
@@ -195,7 +195,7 @@ function Tile({ card, entry, ready }) {
         </div>
         {cheaper === 'wrapped' || cheaper === 'native' ? (
           <div className={`cheapest cheapest--${cheaper}`}>
-            {cheaper === 'wrapped' ? 'Cheaper on Emblem' : 'Cheaper native'}
+            {cheaper === 'wrapped' ? 'Value on Emblem' : 'Value on Native'}
             {savings != null && savings >= 1 && <span> · save {fmtPct(savings)}</span>}
           </div>
         ) : (native != null || wrapped != null) ? (
