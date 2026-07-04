@@ -1,10 +1,12 @@
 # 🐸 Where Pepe
 
-**Wrapped vs native — for every Rare Pepe.**
+**Where's this pepe cheapest?**
 
-For each of the 1,774 cards in the Rare Pepe Directory, Where Pepe shows total
-supply, how much is **native** on Counterparty (Bitcoin) vs **wrapped** in Emblem
-Vault (Ethereum), and the floor price at each location — all normalized to **ETH**.
+For each of the 1,774 cards in the Rare Pepe Directory, Where Pepe compares the
+floor price **native** on Counterparty (Bitcoin) against the floor **wrapped** in
+Emblem Vault (Ethereum) — both in **ETH** — and tells you which side is cheaper,
+and by how much. It also shows the authoritative total of Rare Pepes vaulted in
+Emblem (from Emblem's own API).
 
 Built with Next.js (App Router). All external data is fetched server-side; no
 API keys ever reach the browser.
@@ -20,8 +22,16 @@ API keys ever reach the browser.
 | Holders / supply (source of truth) | `api.counterparty.io:4000/v2` | none |
 | BTC / XCP → ETH conversion | CoinGecko | none |
 | Wrapped floor (collection-level) | OpenSea v2 public stats (`rare-pepe-curated`) | none |
-| Wrapped **count + floor per card** | OpenSea sweep (NFT enumeration + listings), scheduled | `OPENSEA_API_KEY` |
+| Wrapped **floor per card** | OpenSea sweep (NFT enumeration + listings), scheduled | `OPENSEA_API_KEY` |
+| Native **floor per card** | Counterparty open dispensers (bulk sweep), scheduled | none |
 | Wrapped **total** (authoritative) | Emblem v3 `/asset_metadata/projects/vaulted` | `EMBLEM_API_KEY` |
+
+> **Why not a per-card supply %?** The OpenSea "rare-pepe-curated" collection is
+> one ERC-1155 token per card *without* the supply extension (`totalSupply`
+> reverts), and its "Total Supply" trait is the Counterparty issuance — so the
+> exact wrapped-edition count per card isn't exposed. Where Pepe compares
+> *floors* instead (real, available data) and reports Emblem's authoritative
+> aggregate (49,050) for the total-wrapped figure.
 
 Responses are cached in-memory with sensible TTLs (catalog 1 day, floors 1 hour,
 rates 10 min) so upstream APIs aren't hammered.
@@ -77,14 +87,19 @@ Variables**), or in `.env.local` for local dev. All are read **server-side only*
 
 ### The scheduled sweep
 
-Per-card wrapped **count** and **floor** require a `tokenId → asset` index. The
-OpenSea NFT *name* encodes the card (`RAREPEPE | Series 1 Card 1`); listings give
-`tokenId + price` but not the asset. So `/api/cron/refresh` enumerates the
-collection's NFTs (name → asset, and a per-card count) and sweeps listings
-(cheapest per token → per-card floor), joining them into a snapshot stored in
-Next.js's **Data Cache** (persistent on Vercel — no external store). Page reads
-serve that snapshot instantly and never block on the sweep. Runs on `maxDuration`
-300s (Pro).
+`/api/cron/refresh` builds the per-card comparison snapshot:
+
+1. **Wrapped floor** — enumerate the OpenSea collection's NFTs (the name encodes
+   the card, `RAREPEPE | Series 1 Card 1`) to map listing `tokenId`s to cards,
+   then take the cheapest listing per card.
+2. **Native floor** — sweep all open Counterparty dispensers (bulk, cursor
+   paginated), min "buy-now" satoshi price per card, converted BTC → ETH.
+3. **Verdict** — per card, compare the two and record which is cheaper + the %
+   saving.
+
+The snapshot is stored in Next.js's **Data Cache** (persistent on Vercel — no
+external store). Page reads serve it instantly and never block on the sweep.
+~50 sequential calls; runs on `maxDuration` 300s (Pro).
 
 `.gitignore` already excludes `.env*` and `node_modules`, so secrets never land
 in Git.
@@ -100,21 +115,22 @@ Hit **`/api/status`** on your deployed URL — a one-glance health + wiring chec
   "collectionFloor":{ "ok": true, "floorEth": 0.00218 },
   "sampleNative":   { "asset": "RAREPEPE", "floorEth": 160.9, "holders": 208 },
   "wrappedCounts":  { "hasKey": true, "ok": true, "builtAt": "…",
-                      "nfts": 34000, "listings": 1200,
-                      "assetsWithCount": 1700, "assetsWithFloor": 600,
-                      "samples": [ … ] },
+                      "nfts": 1689, "listings": 2628, "dispensers": 900,
+                      "wrappedFloors": 1156, "nativeFloors": 800,
+                      "comparable": 600, "samples": [ … ] },
   "emblem":         { "hasKey": true, "ok": true, "vaultedTotal": 49050 },
   "summary":        { "nativeReady": true, "openSeaKey": true,
-                      "snapshotReady": true, "perCardCounts": 1700,
-                      "perCardFloors": 600, "emblemReady": true }
+                      "snapshotReady": true, "wrappedFloors": 1156,
+                      "nativeFloors": 800, "comparable": 600, "emblemReady": true }
 }
 ```
 
 - `summary.nativeReady` should be `true` immediately (no key needed).
 - After the first sweep runs (`OPENSEA_API_KEY` set + `/api/cron/refresh` hit),
-  `summary.snapshotReady` flips to `true`. Check `perCardCounts` (cards with a
-  wrapped count — expect most of the 1,774) and `perCardFloors` (cards with an
-  active listing — a smaller number). `wrappedCounts.builtAt` shows sweep age.
+  `summary.snapshotReady` flips to `true`. Check `wrappedFloors` (cards with an
+  Emblem listing), `nativeFloors` (cards with an open dispenser), and
+  `comparable` (cards priced on **both** sides — these get a cheaper-side
+  verdict). `wrappedCounts.builtAt` shows sweep age.
 
 ---
 
@@ -128,22 +144,24 @@ Browser ──► Next.js server (Vercel) ──► pepe.wtf / tokenscan / count
 - `app/page.js` — server-renders the full catalog into the gallery (instant first paint).
 - `app/components/Gallery.js` — client: search, series filter, sort, infinite scroll, lazy floor enrichment.
 - `app/card/[asset]/page.js` — server-rendered card detail with per-card OG tags.
-- `app/api/*` — `cards` (catalog), `enrich` (batch native floors), `card/[asset]` (detail),
-  `wrapped-counts` (per-card count+floor snapshot), `cron/refresh` (scheduled sweep), `status`.
-- `lib/*` — `catalog`, `native`, `wrapped`, `sweep` (OpenSea sweep + Data Cache), `emblem`, `rates`, `cache`, `format`.
+- `app/api/*` — `cards` (catalog), `card/[asset]` (detail), `floors` (per-card
+  comparison snapshot), `cron/refresh` (scheduled sweep), `status`.
+- `lib/*` — `catalog`, `native`, `wrapped`, `sweep` (OpenSea + dispenser sweep + Data Cache),
+  `emblem`, `rates`, `cache`, `format`.
 
 ---
 
 ## Roadmap
 
-- **✅ Per-card wrapped counts + floors (OpenSea):** done — the scheduled sweep
-  enumerates the collection (name → asset) and joins listings for per-card
-  floors. (`lib/sweep.js`, `/api/cron/refresh`)
+- **✅ Cheapest-location verdict (native vs wrapped):** done — per-card floor
+  comparison in ETH, with a cheaper-side filter and savings sort.
+  (`lib/sweep.js`, `/api/cron/refresh`, `/api/floors`)
 - **✅ Authoritative wrapped total (Emblem):** done — the true total of Rare
   Pepes vaulted in Emblem, via the v3 API. (`lib/emblem.js`)
-- **Refinements:** the OpenSea per-card count includes redeemed/empty vaults the
-  contract still lists; Emblem's per-project total (49,050) is the authoritative
-  cross-check. A fully redemption-aware per-card split would intersect
-  Counterparty balances with Emblem vault addresses (needs vault enumeration).
-- Nice-to-haves: price history (Vercel KV/Postgres), series pages, a "cheapest
-  location" per-card verdict (native vs wrapped, in ETH).
+- **Native floor coverage:** currently uses Counterparty *dispensers* (buy-now).
+  Adding open DEX orders (XCP/PEPECASH markets) would cover cards that trade only
+  on the order book.
+- **Exact per-card wrapped supply %:** would need per-token ERC-1155 editions —
+  not exposed on-chain (no `totalSupply`) or by OpenSea; a third-party indexer
+  (Reservoir/Alchemy) exposes 1155 supply if this is wanted later.
+- Nice-to-haves: price history (Vercel KV/Postgres), series pages, USD toggle.

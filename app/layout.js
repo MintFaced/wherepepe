@@ -21,24 +21,24 @@ const SITE_URL = resolveSiteUrl();
 
 export const metadata = {
   metadataBase: new URL(SITE_URL),
-  title: 'Where Pepe — Wrapped vs Native Rare Pepe Tracker',
+  title: 'WherePepe Prices (WPP) — where is each Rare Pepe cheapest?',
   description:
-    'For every Rare Pepe card: how many are wrapped in Emblem Vault (Ethereum) ' +
-    'vs still native on Counterparty (Bitcoin), with floor prices in ETH.',
+    'For every Rare Pepe card: the floor price native on Counterparty (Bitcoin) ' +
+    'vs wrapped in Emblem Vault (Ethereum), in ETH — and which side is cheaper.',
   openGraph: {
-    title: 'Where Pepe',
+    title: 'WherePepe Prices (WPP)',
     description:
-      'Wrapped vs native supply and floor prices for every Rare Pepe card.',
+      'Where is each Rare Pepe cheapest — native on Counterparty or wrapped in Emblem? Floors in ETH.',
     url: SITE_URL,
-    siteName: 'Where Pepe',
+    siteName: 'WherePepe Prices',
     type: 'website',
     images: ['/og.png'],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Where Pepe',
+    title: 'WherePepe Prices (WPP)',
     description:
-      'Wrapped vs native supply and floor prices for every Rare Pepe card.',
+      'Where is each Rare Pepe cheapest — native on Counterparty or wrapped in Emblem? Floors in ETH.',
     images: ['/og.png'],
   },
 };

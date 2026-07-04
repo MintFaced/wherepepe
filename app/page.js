@@ -1,25 +1,14 @@
 import Gallery from './components/Gallery';
 import { getCatalog } from '../lib/catalog';
-import { getCollectionFloor } from '../lib/wrapped';
 import { getEmblemVaultedTotal } from '../lib/emblem';
-import { getRates } from '../lib/rates';
 
 export const revalidate = 3600;
 
 export default async function Home() {
-  const [cards, collection, emblem, rates] = await Promise.all([
+  const [cards, emblem] = await Promise.all([
     getCatalog().catch(() => []),
-    getCollectionFloor().catch(() => ({ floorEth: null })),
     getEmblemVaultedTotal().catch(() => ({ total: null })),
-    getRates().catch(() => ({})),
   ]);
 
-  return (
-    <Gallery
-      initialCards={cards}
-      collectionFloorEth={collection.floorEth ?? null}
-      emblemVaultedTotal={emblem.total ?? null}
-      rates={rates}
-    />
-  );
+  return <Gallery initialCards={cards} emblemVaultedTotal={emblem.total ?? null} />;
 }

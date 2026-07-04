@@ -39,8 +39,9 @@ export async function GET() {
     nativeReady: Boolean(catalog.ok && collection && rates?.ok),
     openSeaKey: hasOpenSeaKey(),
     snapshotReady: Boolean(wrapped?.ok),
-    perCardCounts: Number(wrapped?.assetsWithCount || 0),
-    perCardFloors: Number(wrapped?.assetsWithFloor || 0),
+    wrappedFloors: Number(wrapped?.wrappedFloors || 0),
+    nativeFloors: Number(wrapped?.nativeFloors || 0),
+    comparable: Number(wrapped?.comparable || 0),
     emblemReady: Boolean(emblem?.ok),
   };
 

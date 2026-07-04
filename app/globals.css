@@ -204,3 +204,41 @@ button { font-family: inherit; cursor: pointer; }
 .links a { border: 1px solid var(--border-solid); border-radius: var(--radius-sm); padding: 9px 14px; font-size: 13px; font-weight: 600; color: var(--text-dim); }
 .links a:hover { border-color: var(--pepe-deep); color: var(--text); }
 .note { color: var(--text-faint); font-size: 12.5px; margin-top: 6px; line-height: 1.5; }
+
+/* ─── "Cheapest" badge (gallery tiles) ────────────────────────────────── */
+.cheapest {
+  margin-top: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 8px;
+  border-radius: 7px;
+  text-align: center;
+  letter-spacing: 0.01em;
+}
+.cheapest--wrapped { color: var(--eth); background: #7b8cff18; border: 1px solid #2c3468; }
+.cheapest--native  { color: var(--btc); background: #f7931a15; border: 1px solid #4a3413; }
+.cheapest--none    { color: var(--text-faint); background: transparent; border: 1px solid var(--border); }
+.cheapest span { opacity: 0.85; font-weight: 600; }
+
+/* Detail: cheapest verdict banner */
+.verdict {
+  display: flex; align-items: center; gap: 12px;
+  border-radius: var(--radius); padding: 16px 18px; margin: 4px 0 20px;
+  font-size: 16px; font-weight: 700;
+  border: 1px solid var(--border-solid);
+}
+.verdict--wrapped { color: var(--eth); background: #7b8cff12; border-color: #2c3468; }
+.verdict--native  { color: var(--btc); background: #f7931a10; border-color: #4a3413; }
+.verdict--none    { color: var(--text-dim); }
+.verdict .save { margin-left: auto; font-size: 14px; font-weight: 600; opacity: 0.9; }
+
+/* ─── Brand: WherePepe Prices (WPP) ───────────────────────────────────── */
+.logo-sub { color: var(--text-dim); font-weight: 600; }
+.wpp {
+  font-family: var(--mono);
+  font-size: 10px; font-weight: 700; letter-spacing: 0.09em;
+  color: var(--pepe-bright);
+  border: 1px solid var(--pepe-deep); background: #2f7a2a22;
+  padding: 2px 6px; border-radius: 5px; margin-left: 4px;
+}
+@media (max-width: 560px) { .logo-sub, .wpp { display: none; } }

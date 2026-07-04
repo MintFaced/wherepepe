@@ -16,7 +16,7 @@ export async function generateMetadata({ params }) {
   const meta = await getCardMeta(key);
   if (!meta) return { title: 'Card not found — Where Pepe' };
   const title = `${meta.title} — Series ${meta.series}, Card ${meta.card} · Where Pepe`;
-  const description = `${meta.title}: supply ${fmtSupply(meta.supply)}, wrapped vs native breakdown and floor prices in ETH.`;
+  const description = `Where is ${meta.title} cheapest — native on Counterparty or wrapped in Emblem Vault? Floor prices in ETH.`;
   return {
     title,
     description,
@@ -33,17 +33,19 @@ export default async function CardPage({ params }) {
   const meta = await getCardMeta(key);
   if (!meta) notFound();
 
-  const [native, wrapped] = await Promise.all([
-    getNative(key),
-    getWrappedForCard(key, meta.supply),
-  ]);
+  const [native, cmp] = await Promise.all([getNative(key), getWrappedForCard(key)]);
 
   const supply = meta.supply || native.supply || 0;
-  const wrappedCount = wrapped.count;
-  const nativeCount = wrappedCount != null ? Math.max(0, supply - wrappedCount) : null;
-  const pctWrapped = wrappedCount != null && supply > 0 ? Math.min(100, (wrappedCount / supply) * 100) : null;
+  const wrappedEth = cmp.wrappedFloorEth;
+  const nativeEth = cmp.nativeFloorEth;
+  const cheaper = cmp.cheaper;
 
-  const nativeFloorRaw =
+  const verdict =
+    cheaper === 'wrapped' ? { cls: 'wrapped', label: 'Cheaper wrapped — Emblem Vault' }
+    : cheaper === 'native' ? { cls: 'native', label: 'Cheaper native — Counterparty' }
+    : { cls: 'none', label: (nativeEth != null || wrappedEth != null) ? 'Listed on one side only' : 'No active listings' };
+
+  const nativeAmt =
     native.floorCcy === 'BTC' ? fmtBtc(native.floorAmount)
     : native.floorCcy === 'XCP' ? fmtXcp(native.floorAmount)
     : '—';
@@ -63,42 +65,31 @@ export default async function CardPage({ params }) {
             <h1>{meta.title || key}</h1>
             <div className="sub">Series {meta.series} · Card {meta.card} · {key}</div>
 
-            <div className="stat-cards">
-              <div className="stat-card native">
-                <div className="k">Native floor (Counterparty)</div>
-                <div className="v">{fmtEth(native.floorEth)}</div>
-                <div className="note">{nativeFloorRaw !== '—' ? `${nativeFloorRaw} on the ${native.floorCcy} market` : 'No active listing'}</div>
-              </div>
-              <div className="stat-card wrapped">
-                <div className="k">Wrapped floor (Emblem)</div>
-                <div className="v">{fmtEth(wrapped.floorEth ?? wrapped.collectionFloorEth)}</div>
-                <div className="note">{wrapped.floorEth != null ? 'Cheapest Emblem listing for this card' : 'No active listing — collection floor shown'}</div>
-              </div>
-            </div>
-
-            <div className="split-block">
-              <h3>Supply split — {fmtSupply(supply)} issued</h3>
-              <div className="ratiobar" aria-hidden="true">
-                <span style={{ width: pctWrapped != null ? `${pctWrapped}%` : '0%' }} />
-              </div>
-              <div className="split-legend">
-                <span className="w">Wrapped <b>{wrappedCount != null ? `${fmtInt(wrappedCount)} · ${fmtPct(pctWrapped)}` : '—'}</b></span>
-                <span className="n">Native <b>{nativeCount != null ? `${fmtInt(nativeCount)} · ${fmtPct(100 - pctWrapped)}` : `${fmtSupply(supply)} · 100%`}</b></span>
-              </div>
-              {wrappedCount == null && (
-                <p className="note">
-                  Wrapped counts populate after the first scheduled sweep. Until then,
-                  all issued supply is shown as native.
-                </p>
+            <div className={`verdict verdict--${verdict.cls}`}>
+              <span>{verdict.label}</span>
+              {cmp.savingsPct != null && cmp.savingsPct >= 1 && (
+                <span className="save">save {fmtPct(cmp.savingsPct)}</span>
               )}
             </div>
 
+            <div className="stat-cards">
+              <div className="stat-card native">
+                <div className="k">Native floor (Counterparty)</div>
+                <div className="v">{fmtEth(nativeEth)}</div>
+                <div className="note">{nativeAmt !== '—' ? `${nativeAmt} · dispenser` : 'No open dispenser'}</div>
+              </div>
+              <div className="stat-card wrapped">
+                <div className="k">Wrapped floor (Emblem)</div>
+                <div className="v">{fmtEth(wrappedEth ?? cmp.collectionFloorEth)}</div>
+                <div className="note">{wrappedEth != null ? 'Cheapest Emblem listing' : 'No listing — collection floor'}</div>
+              </div>
+            </div>
+
             <div className="meta-list">
-              <div className="row"><span>Total supply</span><b>{fmtSupply(supply)}</b></div>
-              <div className="row"><span>Holders (addresses)</span><b>{fmtInt(native.holders)}</b></div>
+              <div className="row"><span>Total supply (issued)</span><b>{fmtSupply(supply)}</b></div>
+              <div className="row"><span>Native holders</span><b>{fmtInt(native.holders)}</b></div>
               <div className="row"><span>Artist</span><b>{meta.artist || '—'}</b></div>
               <div className="row"><span>Issued</span><b>{meta.issuance ? meta.issuance.slice(0, 10) : '—'}</b></div>
-              <div className="row"><span>Native floor</span><b>{nativeFloorRaw}</b></div>
               <div className="row"><span>Est. value (USD)</span><b>{fmtUsd(native.estUsd)}</b></div>
             </div>
 
