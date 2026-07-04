@@ -35,10 +35,10 @@ export default function Gallery({ initialCards, collectionFloorEth, emblemVaulte
     return () => { cancelled = true; };
   }, []);
 
-  // Wrapped % for a card, from the counts map. null until the map loads.
+  // Wrapped % for a card, from the snapshot map. null until it loads.
   const pctFor = useCallback((card) => {
     if (!countsReady || !(card.supply > 0)) return null;
-    const w = counts[card.asset] || 0;
+    const w = counts[card.asset]?.count || 0;
     return Math.min(100, (w / card.supply) * 100);
   }, [counts, countsReady]);
 
@@ -196,7 +196,13 @@ export default function Gallery({ initialCards, collectionFloorEth, emblemVaulte
 
         <div className="grid">
           {shown.map((c) => (
-            <Tile key={c.asset} card={c} floor={floors[c.asset]} pct={pctFor(c)} />
+            <Tile
+              key={c.asset}
+              card={c}
+              floor={floors[c.asset]}
+              wrappedFloor={counts?.[c.asset]?.floorEth ?? null}
+              pct={pctFor(c)}
+            />
           ))}
         </div>
 
@@ -211,7 +217,7 @@ export default function Gallery({ initialCards, collectionFloorEth, emblemVaulte
   );
 }
 
-function Tile({ card, floor, pct }) {
+function Tile({ card, floor, wrappedFloor, pct }) {
   const floorLoaded = floor !== undefined;
   return (
     <Link href={`/card/${card.asset}`} className="tile">
@@ -222,12 +228,12 @@ function Tile({ card, floor, pct }) {
       <div className="tile-body">
         <div className="tile-name" title={card.title || card.asset}>{card.title || card.asset}</div>
         <div className="tile-row">
-          <span>Supply</span>
-          <b>{fmtSupply(card.supply)}</b>
+          <span style={{ color: 'var(--btc)' }}>Native floor</span>
+          <b className="tile-floor">{floorLoaded ? fmtEth(floor?.floorEth) : <span className="skeleton">…</span>}</b>
         </div>
         <div className="tile-row">
-          <span>Native floor</span>
-          <b className="tile-floor">{floorLoaded ? fmtEth(floor?.floorEth) : <span className="skeleton">…</span>}</b>
+          <span style={{ color: 'var(--eth)' }}>Wrapped floor</span>
+          <b className="tile-floor">{fmtEth(wrappedFloor)}</b>
         </div>
         <div className="tile-split">
           <div className="ratiobar" aria-hidden="true">

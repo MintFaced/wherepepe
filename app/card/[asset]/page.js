@@ -72,7 +72,7 @@ export default async function CardPage({ params }) {
               <div className="stat-card wrapped">
                 <div className="k">Wrapped floor (Emblem)</div>
                 <div className="v">{fmtEth(wrapped.floorEth ?? wrapped.collectionFloorEth)}</div>
-                <div className="note">{wrapped.floorEth == null ? 'Collection floor (per-card in next phase)' : 'Per-card Emblem floor'}</div>
+                <div className="note">{wrapped.floorEth != null ? 'Cheapest Emblem listing for this card' : 'No active listing — collection floor shown'}</div>
               </div>
             </div>
 
@@ -87,8 +87,8 @@ export default async function CardPage({ params }) {
               </div>
               {wrappedCount == null && (
                 <p className="note">
-                  Exact wrapped count arrives with the OpenSea/Emblem integration (next phase).
-                  Until then, all issued supply is shown as native.
+                  Wrapped counts populate after the first scheduled sweep. Until then,
+                  all issued supply is shown as native.
                 </p>
               )}
             </div>
