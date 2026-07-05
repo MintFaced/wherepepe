@@ -21,7 +21,7 @@ function isRealArtist(a) {
 export default function Gallery({ initialCards, emblemVaultedTotal }) {
   const cards = initialCards || [];
   const [query, setQuery] = useState('');
-  const [collection, setCollection] = useState('all');
+  const [collection, setCollection] = useState('rare-pepe');
   const [series, setSeries] = useState('all');
   const [artist, setArtist] = useState('all');
   const [sort, setSort] = useState('series');
@@ -50,6 +50,12 @@ export default function Gallery({ initialCards, emblemVaultedTotal }) {
     const s = new Set();
     cards.forEach((c) => c.series != null && s.add(c.series));
     return [...s].sort((a, b) => a - b);
+  }, [cards]);
+
+  const counts = useMemo(() => {
+    let rare = 0, fake = 0;
+    cards.forEach((c) => { if (c.collection === 'fake-rare') fake += 1; else rare += 1; });
+    return { rare, fake };
   }, [cards]);
 
   const artistOptions = useMemo(() => {
@@ -114,7 +120,8 @@ export default function Gallery({ initialCards, emblemVaultedTotal }) {
 
   const headerRight = (
     <>
-      <div className="header-stat"><b>{cards.length.toLocaleString()}</b><span>Cards</span></div>
+      <div className="header-stat"><b>{counts.rare.toLocaleString()}</b><span>Rare Pepe</span></div>
+      <div className="header-stat"><b style={{ color: 'var(--pepe-bright)' }}>{counts.fake.toLocaleString()}</b><span>Fake Rare</span></div>
       {emblemVaultedTotal != null && (
         <div className="header-stat">
           <b style={{ color: 'var(--eth)' }}>{emblemVaultedTotal.toLocaleString()}</b>
@@ -133,7 +140,7 @@ export default function Gallery({ initialCards, emblemVaultedTotal }) {
         <div style={{ margin: '28px 0 4px' }}>
           <h1 style={{ fontSize: 32 }}>Where's this pepe cheapest?</h1>
           <p style={{ color: 'var(--text-dim)', marginTop: 8, maxWidth: 660 }}>
-            Every Rare Pepe, priced in ETH on both sides — native on{' '}
+            Every Rare Pepe &amp; Fake Rare, priced in ETH on both sides — native on{' '}
             <span style={{ color: 'var(--btc)' }}>Counterparty</span> (Bitcoin) vs wrapped in{' '}
             <span style={{ color: 'var(--eth)' }}>Emblem Vault</span> (Ethereum). Find where each is cheaper.
           </p>
