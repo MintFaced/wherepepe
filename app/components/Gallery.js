@@ -137,13 +137,20 @@ export default function Gallery({ initialCards, emblemVaultedTotal }) {
     <>
       <Header right={headerRight} />
       <main className="container">
-        <div style={{ margin: '28px 0 4px' }}>
-          <h1 style={{ fontSize: 32 }}>Where's this pepe cheapest?</h1>
-          <p style={{ color: 'var(--text-dim)', marginTop: 8, maxWidth: 660 }}>
-            Every Rare Pepe &amp; Fake Rare, priced in ETH on both sides — native on{' '}
-            <span style={{ color: 'var(--btc)' }}>Counterparty</span> (Bitcoin) vs wrapped in{' '}
-            <span style={{ color: 'var(--eth)' }}>Emblem Vault</span> (Ethereum). Find where each is cheaper.
+        <div className="hero">
+          <h1 className="hero-h1">Get Pepe Value.</h1>
+          <p className="hero-sub">
+            <span className="hero-line">Rare Pepe &amp; Fake Rare.</span>
+            <span className="hero-line">Every card price surfaced.</span>
+            <span className="hero-line">
+              <span style={{ color: 'var(--btc)' }}>Counterparty</span> (BTC) and{' '}
+              <span style={{ color: 'var(--eth)' }}>Emblem Vault</span> (ETH).
+            </span>
           </p>
+          <div className="hero-cta">
+            <Link href="/onboarding" className="cta cta-primary">Create Profile</Link>
+            <Link href="/chat" className="cta cta-secondary">ChatPepe</Link>
+          </div>
           {summary && (
             <p className="result-meta" style={{ marginTop: 12 }}>
               {summary.comparable.toLocaleString()} cards priced on both sides ·{' '}

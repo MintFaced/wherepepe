@@ -478,3 +478,41 @@ img.avatar { object-fit: cover; }
 /* Collection badge on tiles */
 .tile-col { position: absolute; top: 8px; right: 8px; font-family: var(--mono); font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 6px; letter-spacing: 0.05em; }
 .tile-col--fake { background: #0b0f0ccc; color: #d9a6ff; border: 1px solid #4a2d6b; }
+
+/* ─── Home hero + CTAs ────────────────────────────────────────────────── */
+.hero { margin: 30px 0 10px; }
+.hero-h1 { font-size: 44px; letter-spacing: -0.03em; }
+.hero-sub { color: var(--text-dim); margin-top: 14px; font-size: 19px; line-height: 1.5; }
+.hero-line { display: block; }
+.hero-cta { display: flex; gap: 12px; margin: 24px 0 4px; flex-wrap: wrap; }
+.cta { display: inline-block; padding: 12px 24px; border-radius: 10px; font-weight: 700; font-size: 15px; }
+.cta-primary { background: var(--pepe-bright); color: #0b0f0c; }
+.cta-primary:hover { background: #93ef7f; }
+.cta-secondary { background: var(--pepe-deep); color: #fff; }
+.cta-secondary:hover { background: #3a9433; }
+@media (max-width: 560px) { .hero-h1 { font-size: 34px; } .hero-sub { font-size: 16px; } }
+
+/* ─── Onboarding ──────────────────────────────────────────────────────── */
+.onboard { max-width: 900px; padding-bottom: 64px; }
+.onboard-hero { padding: 44px 0 10px; text-align: center; }
+.onboard-hero h1 { font-size: 34px; letter-spacing: -0.02em; }
+.onboard-hero p { color: var(--text-dim); font-size: 18px; margin: 14px auto 0; max-width: 640px; line-height: 1.55; }
+.onboard-hero .hero-cta { justify-content: center; margin-top: 24px; }
+.onboard-benefits { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin: 30px 0; }
+@media (max-width: 720px) { .onboard-benefits { grid-template-columns: 1fr; } }
+.benefit { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; }
+.benefit-icon { font-size: 30px; }
+.benefit h3 { font-size: 18px; margin: 12px 0 8px; }
+.benefit p { color: var(--text-dim); line-height: 1.55; font-size: 14.5px; }
+.onboard-steps { margin: 36px 0; }
+.onboard-steps h2, .onboard-example h2 { font-size: 22px; margin-bottom: 16px; }
+.steps { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.steps li { display: flex; gap: 14px; align-items: flex-start; color: var(--text-dim); line-height: 1.5; }
+.steps li b { color: var(--text); }
+.step-n { flex: 0 0 30px; width: 30px; height: 30px; border-radius: 50%; background: var(--pepe-deep); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; }
+.steps code { background: var(--bg); border: 1px solid var(--border-solid); border-radius: 6px; padding: 1px 6px; font-size: 13px; font-family: var(--mono); }
+.muted { color: var(--text-faint); }
+.onboard-example { margin: 36px 0; text-align: center; }
+.example-shot { display: block; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border-solid); margin-bottom: 16px; }
+.example-shot img { width: 100%; display: block; }
+.onboard-foot { text-align: center; margin-top: 30px; }
