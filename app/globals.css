@@ -461,3 +461,8 @@ img.avatar { object-fit: cover; }
 /* +emoji react button at 40% */
 .react-add { opacity: 0.4; }
 .react-add:hover { opacity: 1; }
+
+/* @mention autocomplete */
+.mention-pop { display: flex; flex-direction: column; border-bottom: 1px solid var(--border); background: var(--bg-card); max-height: 200px; overflow-y: auto; }
+.mention-opt { text-align: left; background: none; border: none; color: var(--pepe-bright); font-weight: 600; font-size: 14px; padding: 9px 14px; }
+.mention-opt:hover { background: var(--bg); }

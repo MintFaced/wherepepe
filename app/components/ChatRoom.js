@@ -83,8 +83,11 @@ export default function ChatRoom() {
   const [replyTarget, setReplyTarget] = useState(null);
   const [showEmoji, setShowEmoji] = useState(false);
   const [online, setOnline] = useState(0);
+  const [mentionCtx, setMentionCtx] = useState(null);   // { at, q }
+  const [mentionMatches, setMentionMatches] = useState([]);
   const listRef = useRef(null);
   const tokenRef = useRef(null);
+  const inputRef = useRef(null);
   const atBottomRef = useRef(true);
 
   // Restore a previous session.
@@ -249,9 +252,55 @@ export default function ChatRoom() {
   // Known handles (longest-first) for @mention highlighting.
   const handles = useMemo(() => {
     const set = new Set();
+    messages.forEach((m) => m.handle && identity && m.handle !== identity.handle && set.add(m.handle));
+    return [...set].sort((a, b) => b.length - a.length);
+  }, [messages, identity]);
+
+  // All handles (incl. self) for rendering highlights.
+  const allHandles = useMemo(() => {
+    const set = new Set();
     messages.forEach((m) => m.handle && set.add(m.handle));
     return [...set].sort((a, b) => b.length - a.length);
   }, [messages]);
+
+  function onInputChange(e) {
+    const val = e.target.value;
+    setInput(val);
+    const cursor = e.target.selectionStart ?? val.length;
+    const before = val.slice(0, cursor);
+    const at = before.lastIndexOf('@');
+    if (at >= 0) {
+      const charBefore = at > 0 ? before[at - 1] : ' ';
+      const q = before.slice(at + 1);
+      if ((at === 0 || /\s/.test(charBefore)) && !/\n/.test(q)) {
+        const list = (q
+          ? handles.filter((h) => h.toLowerCase().startsWith(q.toLowerCase()) && h.toLowerCase() !== q.toLowerCase())
+          : handles).slice(0, 6);
+        if (list.length) { setMentionCtx({ at, q }); setMentionMatches(list); return; }
+      }
+    }
+    setMentionCtx(null);
+  }
+
+  function insertMention(handle) {
+    if (!mentionCtx) return;
+    const { at, q } = mentionCtx;
+    const cursorEnd = at + 1 + q.length;
+    const next = (input.slice(0, at) + '@' + handle + ' ' + input.slice(cursorEnd)).slice(0, 280);
+    setInput(next);
+    setMentionCtx(null);
+    requestAnimationFrame(() => {
+      const el = inputRef.current;
+      if (el) { const pos = at + handle.length + 2; el.focus(); el.setSelectionRange(pos, pos); }
+    });
+  }
+
+  function onInputKeyDown(e) {
+    if (mentionCtx && mentionMatches.length) {
+      if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); insertMention(mentionMatches[0]); }
+      else if (e.key === 'Escape') { setMentionCtx(null); }
+    }
+  }
 
   async function send(e) {
     e?.preventDefault();
@@ -313,7 +362,7 @@ export default function ChatRoom() {
                 onReply={identity && identity.holder ? () => { setReplyTarget({ id: m.id, handle: m.handle, text: m.text }); } : null}
                 onReact={identity && identity.holder ? (emoji) => react(m.id, emoji) : null}
                 onDelete={identity && m.address === identity.address ? () => del(m.id) : null}
-                handles={handles}
+                handles={allHandles}
                 myHandle={identity?.handle}
               />
             ))}
@@ -334,6 +383,18 @@ export default function ChatRoom() {
                   ))}
                 </div>
               )}
+              {mentionCtx && mentionMatches.length > 0 && (
+                <div className="mention-pop">
+                  {mentionMatches.map((h) => (
+                    <button
+                      key={h}
+                      type="button"
+                      className="mention-opt"
+                      onMouseDown={(e) => { e.preventDefault(); insertMention(h); }}
+                    >@{h}</button>
+                  ))}
+                </div>
+              )}
               <form className="chat-input" onSubmit={send}>
                 <span className="chat-me">
                   {identity.pfp
@@ -347,11 +408,14 @@ export default function ChatRoom() {
                 </span>
                 <button type="button" className="emoji-btn" onClick={() => setShowEmoji((v) => !v)} title="Emoji" aria-label="Emoji">😀</button>
                 <input
+                  ref={inputRef}
                   value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  placeholder="Message the pond…"
+                  onChange={onInputChange}
+                  onKeyDown={onInputKeyDown}
+                  placeholder="Message the pond… (@ to tag someone)"
                   maxLength={280}
                   aria-label="Message"
+                  autoComplete="off"
                 />
                 <button type="submit" disabled={sending || !input.trim()}>Send</button>
               </form>
