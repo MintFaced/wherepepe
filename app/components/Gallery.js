@@ -148,8 +148,7 @@ export default function Gallery({ initialCards, emblemVaultedTotal }) {
             </span>
           </p>
           <div className="hero-cta">
-            <Link href="/onboarding" className="cta cta-primary">Create Profile</Link>
-            <Link href="/chat" className="cta cta-secondary">ChatPepe</Link>
+            <Link href="/chat" className="cta cta-primary">ChatPepe</Link>
           </div>
           {summary && (
             <p className="result-meta" style={{ marginTop: 12 }}>
