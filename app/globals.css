@@ -543,3 +543,14 @@ img.avatar { object-fit: cover; }
 .notif-pop { position: absolute; top: 100%; left: 0; margin-top: 8px; background: var(--bg-raised); border: 1px solid var(--border-solid); border-radius: 10px; padding: 12px 14px; box-shadow: var(--shadow); z-index: 60; width: max-content; max-width: 260px; }
 .notif-pop-row { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--pepe-bright); margin-bottom: 8px; }
 .notif-pop-box { background: var(--bg-card); border: 1px solid var(--border-solid); border-radius: 8px; padding: 8px 10px; font-size: 13px; color: var(--text-dim); text-align: center; font-weight: 600; }
+
+/* ─── Card detail: prev/next neighbour strip ──────────────────────────── */
+.cardnav { display: flex; align-items: center; gap: 12px; margin: 16px 0 6px; }
+.cardnav-arrow { flex: 0 0 auto; width: 38px; height: 52px; display: flex; align-items: center; justify-content: center; background: var(--bg-card); border: 1px solid var(--border-solid); border-radius: 10px; font-size: 20px; color: var(--text-dim); }
+.cardnav-arrow:hover { border-color: var(--pepe-deep); color: var(--text); }
+.cardnav-arrow.disabled { opacity: 0.3; pointer-events: none; }
+.cardnav-thumbs { flex: 1; display: flex; gap: 8px; overflow-x: auto; justify-content: center; padding: 4px 0; }
+.cardnav-thumb { flex: 0 0 auto; width: 42px; aspect-ratio: 5 / 7; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-solid); background: #0d120d; opacity: 0.55; transition: opacity 0.12s ease, transform 0.12s ease; }
+.cardnav-thumb:hover { opacity: 1; }
+.cardnav-thumb img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.cardnav-thumb.current { opacity: 1; border-color: var(--pepe); transform: scale(1.1); }

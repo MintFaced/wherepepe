@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import Header from '../../components/Header';
-import { getCardMeta } from '../../../lib/catalog';
+import CardKeyNav from '../../components/CardKeyNav';
+import { getCardMeta, getCatalog } from '../../../lib/catalog';
 import { getNative } from '../../../lib/native';
 import { getWrappedForCard } from '../../../lib/wrapped';
 import { COLLECTIONS } from '../../../lib/collections';
@@ -34,7 +35,19 @@ export default async function CardPage({ params }) {
   const meta = await getCardMeta(key);
   if (!meta) notFound();
 
-  const [native, cmp] = await Promise.all([getNative(key), getWrappedForCard(key)]);
+  const [native, cmp, catalog] = await Promise.all([getNative(key), getWrappedForCard(key), getCatalog().catch(() => [])]);
+
+  // Neighbours within the same collection (ordered by series, card).
+  const siblings = catalog.filter((c) => c.collection === meta.collection);
+  const idx = siblings.findIndex((c) => c.asset === key);
+  const prev = idx > 0 ? siblings[idx - 1] : null;
+  const next = idx >= 0 && idx < siblings.length - 1 ? siblings[idx + 1] : null;
+  const windowCards = idx >= 0 ? siblings.slice(Math.max(0, idx - 5), idx + 6) : [];
+
+  const col = COLLECTIONS[meta.collection] || COLLECTIONS['rare-pepe'];
+  const osUrl = cmp.wrappedTokenId
+    ? `https://opensea.io/item/ethereum/${col.contract}/${cmp.wrappedTokenId}`
+    : `https://opensea.io/collection/${col.osSlug}`;
 
   const supply = meta.supply || native.supply || 0;
   const wrappedEth = cmp.wrappedFloorEth;
@@ -56,6 +69,31 @@ export default async function CardPage({ params }) {
       <Header />
       <div className="container">
         <Link href="/" className="back">← All cards</Link>
+
+        <CardKeyNav prev={prev?.asset || null} next={next?.asset || null} />
+
+        {windowCards.length > 1 && (
+          <div className="cardnav">
+            {prev
+              ? <Link href={`/card/${prev.asset}`} className="cardnav-arrow" aria-label="Previous card">←</Link>
+              : <span className="cardnav-arrow disabled">←</span>}
+            <div className="cardnav-thumbs">
+              {windowCards.map((c) => (
+                <Link
+                  key={c.asset}
+                  href={`/card/${c.asset}`}
+                  className={`cardnav-thumb${c.asset === key ? ' current' : ''}`}
+                  title={`${c.title} · S${c.series}·${c.card}`}
+                >
+                  {c.image ? <img src={c.image} alt={c.title} loading="lazy" /> : null}
+                </Link>
+              ))}
+            </div>
+            {next
+              ? <Link href={`/card/${next.asset}`} className="cardnav-arrow" aria-label="Next card">→</Link>
+              : <span className="cardnav-arrow disabled">→</span>}
+          </div>
+        )}
 
         <div className="detail">
           <div className="detail-art">
@@ -98,7 +136,7 @@ export default async function CardPage({ params }) {
             <div className="links">
               <a href={`https://pepe.wtf/asset/${key}`} target="_blank" rel="noopener noreferrer">pepe.wtf ↗</a>
               <a href={`https://tokenscan.io/asset/${key}`} target="_blank" rel="noopener noreferrer">tokenscan ↗</a>
-              <a href={`https://opensea.io/collection/${(COLLECTIONS[meta.collection] || COLLECTIONS['rare-pepe']).osSlug}`} target="_blank" rel="noopener noreferrer">Emblem on OpenSea ↗</a>
+              <a href={osUrl} target="_blank" rel="noopener noreferrer">Get on OpenSea ↗</a>
             </div>
           </div>
         </div>
