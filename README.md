@@ -150,9 +150,18 @@ own**. Messages poll every ~3s.
 > it, reads read it, and a failed sweep never wipes the last-good data.
 
 **Wallet profiles (`/u/[address]`):** clicking a handle in chat opens that
-wallet's public profile — its Rare Pepe collection (from OpenSea), each card
-valued at the wrapped floor, with a collection total, sortable **by series** or
-**by value**.
+wallet's public profile — its Rare Pepe collection sourced from its **Emblem
+Vaults** (`/myvaults`, keyless), so **editions owned per card** come for free.
+Each card is valued at the wrapped floor, with a collection total, sortable **by
+series** or **by value**, and an "Secured by Emblem Vault" credit. The holder
+gate and PFP picker are Emblem-powered too. *(Emblem's `/myvaults` is
+case-sensitive — always query the checksummed address.)*
+
+**Artist pages (`/artist/[name]`):** every Rare Pepe by an artist + a market cap
+(floor × supply). Linked from each card's Artist field and the pricing filter.
+
+**Chat presence:** a Redis sorted-set tracks who polled in the last 30s → an
+"N online" pill in the ChatPepe header.
 
 **Chat features:** emoji picker, threaded **replies** (the quote is looked up
 server-side so it can't be forged), a **HOLDER** badge, and an **RP ARTIST**

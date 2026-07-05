@@ -1,20 +1,26 @@
 import { NextResponse } from 'next/server';
-import { listMessages, chatConfigured } from '../../../../lib/chat';
+import { listMessages, chatConfigured, verifyToken, touchPresence } from '../../../../lib/chat';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-// Recent messages (oldest → newest). Optional ?since=<ts> for incremental polls.
+// Recent messages (oldest → newest) + presence. A poll with a valid token marks
+// that wallet online; every poll returns the current online count.
 export async function GET(request) {
   if (!chatConfigured()) {
-    return NextResponse.json({ ok: false, configured: false, messages: [] }, { status: 200 });
+    return NextResponse.json({ ok: false, configured: false, messages: [], online: 0 }, { status: 200 });
   }
-  const since = Number(new URL(request.url).searchParams.get('since') || 0);
+  const url = new URL(request.url);
+  const since = Number(url.searchParams.get('since') || 0);
+  const session = verifyToken(url.searchParams.get('token'));
   try {
-    let messages = await listMessages();
-    if (since > 0) messages = messages.filter((m) => m.ts > since);
-    return NextResponse.json({ ok: true, configured: true, messages });
+    const [messagesAll, online] = await Promise.all([
+      listMessages(),
+      touchPresence(session?.address || null),
+    ]);
+    const messages = since > 0 ? messagesAll.filter((m) => m.ts > since) : messagesAll;
+    return NextResponse.json({ ok: true, configured: true, messages, online });
   } catch (e) {
-    return NextResponse.json({ ok: false, configured: true, messages: [], error: String(e) }, { status: 200 });
+    return NextResponse.json({ ok: false, configured: true, messages: [], online: 0, error: String(e) }, { status: 200 });
   }
 }

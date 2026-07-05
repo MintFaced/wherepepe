@@ -28,7 +28,9 @@ export default function ChatRoom() {
   const [profileErr, setProfileErr] = useState('');
   const [replyTarget, setReplyTarget] = useState(null);
   const [showEmoji, setShowEmoji] = useState(false);
+  const [online, setOnline] = useState(0);
   const listRef = useRef(null);
+  const tokenRef = useRef(null);
   const atBottomRef = useRef(true);
 
   // Restore a previous session.
@@ -40,13 +42,17 @@ export default function ChatRoom() {
     } catch {}
   }, []);
 
-  // Poll messages.
+  useEffect(() => { tokenRef.current = token; }, [token]);
+
+  // Poll messages (+ presence when signed in).
   const loadMessages = useCallback(async () => {
     try {
-      const res = await fetch('/api/chat/messages');
+      const t = tokenRef.current;
+      const res = await fetch(`/api/chat/messages${t ? `?token=${encodeURIComponent(t)}` : ''}`);
       const data = await res.json();
       setConfigured(data.configured !== false);
       if (Array.isArray(data.messages)) setMessages(data.messages);
+      if (typeof data.online === 'number') setOnline(data.online);
     } catch {}
   }, []);
 
@@ -182,7 +188,7 @@ export default function ChatRoom() {
       <Header />
       <main className="container chat-wrap">
         <div className="chat-head">
-          <h1>🐸 ChatPepe</h1>
+          <h1>🐸 ChatPepe {online > 0 && <span className="online-pill"><span className="online-dot" />{online} online</span>}</h1>
           <p>Hold a Rare Pepe to post; anyone can read. Connect your wallet, get a Pepe identity, and chat about rares. Be excellent to each other.</p>
         </div>
 

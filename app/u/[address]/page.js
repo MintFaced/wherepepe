@@ -45,8 +45,12 @@ export default async function WalletPage({ params }) {
             <h1>{w.handle}{w.artist && <span className="artist" title={`Rare Pepe Artist: ${w.artist}`}>RP ARTIST</span>}</h1>
             <div className="sub">{shortAddr(w.address)}</div>
             <div className="wallet-stats">
-              <span><b>{w.count.toLocaleString()}</b> Rare Pepes</span>
-              <span><b style={{ color: 'var(--eth)' }}>{fmtEth(w.totalValueEth)}</b> collection value</span>
+              <span><b>{w.count.toLocaleString()}</b> cards</span>
+              <span><b>{w.editionsTotal.toLocaleString()}</b> editions</span>
+              <span><b style={{ color: 'var(--eth)' }}>{fmtEth(w.totalValueEth)}</b> value</span>
+            </div>
+            <div className="wallet-emblem" title="Collection held in Emblem Vaults">
+              🔐 Secured by <b>Emblem Vault</b>{w.vaultTotal ? ` · ${w.vaultTotal.toLocaleString()} vaults` : ''}
             </div>
           </div>
           <a

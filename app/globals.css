@@ -396,3 +396,24 @@ img.avatar { object-fit: cover; }
 .emoji-pop button { background: none; border: none; font-size: 20px; padding: 3px 5px; border-radius: 6px; line-height: 1; }
 .emoji-pop button:hover { background: var(--bg); }
 .emoji-btn { background: none; border: none; font-size: 20px; padding: 0 4px; line-height: 1; }
+
+/* Editions badge on owned cards */
+.tile-editions {
+  position: absolute; top: 8px; right: 8px;
+  font-family: var(--mono); font-size: 11px; font-weight: 700;
+  background: #0b0f0ccc; color: var(--eth); padding: 2px 7px; border-radius: 6px;
+}
+/* Emblem credit on wallet profiles */
+.wallet-emblem { margin-top: 10px; font-size: 13px; color: var(--text-dim); }
+.wallet-emblem b { color: var(--eth); }
+/* Artist link on card detail */
+.artist-link { color: var(--pepe); }
+.artist-link:hover { text-decoration: underline; }
+/* Chat presence pill */
+.online-pill {
+  font-size: 12px; font-weight: 600; color: var(--pepe-bright);
+  background: #2f7a2a22; border: 1px solid var(--pepe-deep); border-radius: 999px;
+  padding: 3px 10px 3px 8px; display: inline-flex; align-items: center; gap: 6px;
+  vertical-align: middle; margin-left: 8px;
+}
+.online-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--pepe-bright); box-shadow: 0 0 6px var(--pepe-bright); }

@@ -26,6 +26,7 @@ export default function WalletGrid({ cards }) {
             <div className="tile-img">
               {c.image ? <img src={c.image} alt={c.title} loading="lazy" /> : null}
               {c.series != null && <span className="tile-serie">S{c.series}·{c.card}</span>}
+              {c.editions > 1 && <span className="tile-editions">×{c.editions}</span>}
             </div>
             <div className="tile-body">
               <div className="tile-name" title={c.title}>{c.title}</div>
