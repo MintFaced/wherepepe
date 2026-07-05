@@ -11,6 +11,7 @@ export default function Gallery({ initialCards, emblemVaultedTotal }) {
   const cards = initialCards || [];
   const [query, setQuery] = useState('');
   const [series, setSeries] = useState('all');
+  const [artist, setArtist] = useState('all');
   const [sort, setSort] = useState('series');
   const [view, setView] = useState('all'); // all | wrapped | native
   const [visible, setVisible] = useState(PAGE);
@@ -39,6 +40,12 @@ export default function Gallery({ initialCards, emblemVaultedTotal }) {
     return [...s].sort((a, b) => a - b);
   }, [cards]);
 
+  const artistOptions = useMemo(() => {
+    const s = new Set();
+    cards.forEach((c) => c.artist && s.add(c.artist));
+    return [...s].sort((a, b) => a.localeCompare(b));
+  }, [cards]);
+
   const summary = useMemo(() => {
     if (!available) return null;
     let comparable = 0, wrapped = 0, native = 0;
@@ -59,7 +66,8 @@ export default function Gallery({ initialCards, emblemVaultedTotal }) {
     };
     let list = cards.filter((c) => {
       if (series !== 'all' && String(c.series) !== series) return false;
-      if (q && !c.asset.includes(q) && !(c.title || '').toUpperCase().includes(q)) return false;
+      if (artist !== 'all' && c.artist !== artist) return false;
+      if (q && !c.asset.includes(q) && !(c.title || '').toUpperCase().includes(q) && !(c.artist || '').toUpperCase().includes(q)) return false;
       if (view !== 'all' && available) {
         if (floors[c.asset]?.cheaper !== view) return false;
       }
@@ -75,9 +83,9 @@ export default function Gallery({ initialCards, emblemVaultedTotal }) {
       }
     });
     return list;
-  }, [cards, query, series, sort, view, floors, available]);
+  }, [cards, query, series, artist, sort, view, floors, available]);
 
-  useEffect(() => { setVisible(PAGE); }, [query, series, sort, view]);
+  useEffect(() => { setVisible(PAGE); }, [query, series, artist, sort, view]);
   const shown = filtered.slice(0, visible);
 
   const sentinel = useRef(null);
@@ -134,6 +142,11 @@ export default function Gallery({ initialCards, emblemVaultedTotal }) {
           <select className="select" value={series} onChange={(e) => setSeries(e.target.value)} aria-label="Filter by series">
             <option value="all">All series</option>
             {seriesOptions.map((s) => <option key={s} value={String(s)}>Series {s}</option>)}
+          </select>
+
+          <select className="select" value={artist} onChange={(e) => setArtist(e.target.value)} aria-label="Filter by artist">
+            <option value="all">All artists</option>
+            {artistOptions.map((a) => <option key={a} value={a}>{a}</option>)}
           </select>
 
           <select className="select" value={sort} onChange={(e) => setSort(e.target.value)} aria-label="Sort">

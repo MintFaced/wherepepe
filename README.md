@@ -154,6 +154,19 @@ wallet's public profile — its Rare Pepe collection (from OpenSea), each card
 valued at the wrapped floor, with a collection total, sortable **by series** or
 **by value**.
 
+**Chat features:** emoji picker, threaded **replies** (the quote is looked up
+server-side so it can't be forged), a **HOLDER** badge, and an **RP ARTIST**
+badge. Artists are an admin allowlist (no reliable ETH-wallet→artist link
+exists) — designate one:
+```bash
+curl -X POST https://<your-app>/api/chat/admin/artist \
+  -H "authorization: Bearer $CRON_SECRET" \
+  -H "content-type: application/json" \
+  -d '{"address":"0x…","name":"Mike"}'
+```
+Omit `name` (or send empty) to remove the label. The label then shows in chat
+and on the wallet profile.
+
 **Setup (one-time):**
 1. In Vercel: **Storage → Create Database → KV (Upstash Redis)**, then connect it
    to this project. That injects `KV_REST_API_URL` + `KV_REST_API_TOKEN`.

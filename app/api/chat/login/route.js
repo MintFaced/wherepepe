@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { verifyMessage, isAddress } from 'viem';
-import { chatConfigured, identityFor, issueToken, isHolder, getProfile } from '../../../../lib/chat';
+import { chatConfigured, identityFor, issueToken, isHolder, getProfile, getArtist } from '../../../../lib/chat';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -29,16 +29,20 @@ export async function POST(request) {
   try { valid = await verifyMessage({ address, message, signature }); } catch { valid = false; }
   if (!valid) return NextResponse.json({ ok: false, error: 'bad signature' }, { status: 401 });
 
-  const holder = await isHolder(address).catch(() => false);
-  const profile = await getProfile(address).catch(() => null);
+  const [holder, profile, artist] = await Promise.all([
+    isHolder(address).catch(() => false),
+    getProfile(address).catch(() => null),
+    getArtist(address).catch(() => null),
+  ]);
   const identity = identityFor(address);
-  const token = issueToken(address, holder);
+  const token = issueToken(address, holder, artist);
   return NextResponse.json({
     ok: true,
     token,
     identity: {
       ...identity,
       holder,
+      artist: artist || null,
       handle: profile?.handle || identity.handle,
       pfp: profile?.pfpImage || null,
       pfpAsset: profile?.pfpAsset || null,

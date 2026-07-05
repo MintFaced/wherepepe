@@ -42,7 +42,7 @@ export default async function WalletPage({ params }) {
             ? <img className="wallet-avatar" src={w.pfp} alt="" />
             : <span className="wallet-avatar" style={{ background: w.avatar }} />}
           <div>
-            <h1>{w.handle}</h1>
+            <h1>{w.handle}{w.artist && <span className="artist" title={`Rare Pepe Artist: ${w.artist}`}>RP ARTIST</span>}</h1>
             <div className="sub">{shortAddr(w.address)}</div>
             <div className="wallet-stats">
               <span><b>{w.count.toLocaleString()}</b> Rare Pepes</span>

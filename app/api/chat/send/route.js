@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { verifyToken, addMessage, rateOk, chatConfigured, MAX_TEXT } from '../../../../lib/chat';
+import { verifyToken, addMessage, rateOk, chatConfigured, findMessage, MAX_TEXT } from '../../../../lib/chat';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -31,6 +31,19 @@ export async function POST(request) {
     return NextResponse.json({ ok: false, error: 'slow down' }, { status: 429 });
   }
 
-  const msg = await addMessage({ address: session.address, text: clean, holder: session.holder });
+  // Reply: look up the parent so the quote can't be forged.
+  let replyTo = null;
+  if (body.replyId) {
+    const parent = await findMessage(String(body.replyId));
+    if (parent) replyTo = { id: parent.id, handle: parent.handle, text: String(parent.text || '').slice(0, 120) };
+  }
+
+  const msg = await addMessage({
+    address: session.address,
+    text: clean,
+    holder: session.holder,
+    artist: session.artist,
+    replyTo,
+  });
   return NextResponse.json({ ok: true, message: msg });
 }

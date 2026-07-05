@@ -7,6 +7,8 @@ import { fmtEth } from '../../lib/format';
 const POLL_MS = 3000;
 const TOKEN_KEY = 'chatpepe:token';
 const IDENT_KEY = 'chatpepe:identity';
+const EMOJIS = ['🐸', '🐋', '💎', '🚀', '🔥', '😂', '😎', '👀', '🙌', '💚', '🤝', '🫡',
+  '😭', '🤔', '👍', '🎉', '💰', '📈', '📉', '🧠', '🤯', '😤', '🙏', '✨', '🐳', '🫶', '💀', '🥲', '🤡', '👑'];
 
 export default function ChatRoom() {
   const [identity, setIdentity] = useState(null);
@@ -24,6 +26,8 @@ export default function ChatRoom() {
   const [selectedPfp, setSelectedPfp] = useState(null);
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileErr, setProfileErr] = useState('');
+  const [replyTarget, setReplyTarget] = useState(null);
+  const [showEmoji, setShowEmoji] = useState(false);
   const listRef = useRef(null);
   const atBottomRef = useRef(true);
 
@@ -151,7 +155,7 @@ export default function ChatRoom() {
       const res = await fetch('/api/chat/send', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ token, text }),
+        body: JSON.stringify({ token, text, replyId: replyTarget?.id || null }),
       });
       const data = await res.json();
       if (!data.ok) {
@@ -162,6 +166,8 @@ export default function ChatRoom() {
         return;
       }
       setInput('');
+      setReplyTarget(null);
+      setShowEmoji(false);
       atBottomRef.current = true;
       loadMessages();
     } catch {
@@ -192,27 +198,52 @@ export default function ChatRoom() {
             {messages.length === 0 ? (
               <div className="chat-empty">No messages yet. Say hi, frog. 🐸</div>
             ) : messages.map((m) => (
-              <Message key={m.id} m={m} mine={identity && m.address === identity.address} />
+              <Message
+                key={m.id}
+                m={m}
+                mine={identity && m.address === identity.address}
+                onReply={identity && identity.holder ? () => { setReplyTarget({ id: m.id, handle: m.handle, text: m.text }); } : null}
+              />
             ))}
           </div>
 
           {status === 'ready' && identity && identity.holder ? (
-            <form className="chat-input" onSubmit={send}>
-              <span className="chat-me">
-                {identity.pfp
-                  ? <img className="avatar" src={identity.pfp} alt="" />
-                  : <span className="avatar" style={{ background: identity.avatar }} />}
-                <span className="chat-me-name">{identity.handle}<span className="holder">HOLDER</span></span>
-              </span>
-              <input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Message the pond…"
-                maxLength={280}
-                aria-label="Message"
-              />
-              <button type="submit" disabled={sending || !input.trim()}>Send</button>
-            </form>
+            <div className="chat-inputwrap">
+              {replyTarget && (
+                <div className="reply-banner">
+                  Replying to <b>{replyTarget.handle}</b>: <span className="reply-snip">{replyTarget.text}</span>
+                  <button className="reply-x" onClick={() => setReplyTarget(null)} aria-label="Cancel reply">×</button>
+                </div>
+              )}
+              {showEmoji && (
+                <div className="emoji-pop">
+                  {EMOJIS.map((e) => (
+                    <button key={e} type="button" onClick={() => setInput((v) => (v + e).slice(0, 280))}>{e}</button>
+                  ))}
+                </div>
+              )}
+              <form className="chat-input" onSubmit={send}>
+                <span className="chat-me">
+                  {identity.pfp
+                    ? <img className="avatar" src={identity.pfp} alt="" />
+                    : <span className="avatar" style={{ background: identity.avatar }} />}
+                  <span className="chat-me-name">
+                    {identity.handle}
+                    {identity.artist && <span className="artist">RP</span>}
+                    <span className="holder">HOLDER</span>
+                  </span>
+                </span>
+                <button type="button" className="emoji-btn" onClick={() => setShowEmoji((v) => !v)} title="Emoji" aria-label="Emoji">😀</button>
+                <input
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Message the pond…"
+                  maxLength={280}
+                  aria-label="Message"
+                />
+                <button type="submit" disabled={sending || !input.trim()}>Send</button>
+              </form>
+            </div>
           ) : status === 'ready' && identity ? (
             <div className="chat-connect">
               <div className="chat-gate">🐸 Hold a Rare Pepe to post — here’s the cheapest way in:</div>
@@ -291,7 +322,7 @@ export default function ChatRoom() {
   );
 }
 
-function Message({ m, mine }) {
+function Message({ m, mine, onReply }) {
   const time = new Date(m.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   return (
     <div className={`msg${mine ? ' msg--mine' : ''}`}>
@@ -301,9 +332,17 @@ function Message({ m, mine }) {
       <div className="msg-body">
         <div className="msg-meta">
           <a href={`/u/${m.address}`} className="msg-handle">{m.handle}</a>
+          {m.artist && <span className="artist" title={`Rare Pepe Artist: ${m.artist}`}>RP ARTIST</span>}
           {m.holder && <span className="holder">HOLDER</span>}
           <span className="msg-time">{time}</span>
+          {onReply && <button className="msg-reply" onClick={onReply} title="Reply">↩</button>}
         </div>
+        {m.replyTo && (
+          <div className="msg-quote">
+            <span className="msg-quote-handle">{m.replyTo.handle}</span>
+            <span className="msg-quote-text">{m.replyTo.text}</span>
+          </div>
+        )}
         <div className="msg-text">{m.text}</div>
       </div>
     </div>

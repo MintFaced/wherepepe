@@ -370,3 +370,29 @@ img.avatar { object-fit: cover; }
 
 .msg-handle { cursor: pointer; }
 .msg-handle:hover { text-decoration: underline; }
+
+/* ─── RP Artist badge ─────────────────────────────────────────────────── */
+.artist {
+  font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 0.06em;
+  color: #d9a6ff; background: #6b3fa022; border: 1px solid #4a2d6b; border-radius: 4px; padding: 1px 5px;
+}
+.wallet-head h1 .artist { font-size: 11px; margin-left: 10px; vertical-align: middle; }
+
+/* ─── Chat: replies + emoji ───────────────────────────────────────────── */
+.msg-reply { margin-left: auto; background: none; border: none; color: var(--text-faint); font-size: 14px; padding: 0 4px; opacity: 0.55; }
+.msg:hover .msg-reply { opacity: 1; }
+.msg-reply:hover { color: var(--pepe); }
+.msg-quote { border-left: 2px solid var(--pepe-deep); padding: 2px 8px; margin: 3px 0 5px; font-size: 12.5px; display: flex; gap: 6px; max-width: 100%; }
+.msg-quote-handle { color: var(--pepe-bright); font-weight: 600; flex: 0 0 auto; }
+.msg-quote-text { color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.chat-inputwrap { background: var(--bg-card); border-top: 1px solid var(--border); }
+.chat-inputwrap .chat-input { border-top: none; background: none; }
+.reply-banner { display: flex; align-items: center; gap: 6px; padding: 8px 12px; font-size: 13px; color: var(--text-dim); border-bottom: 1px solid var(--border); }
+.reply-snip { color: var(--text-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.reply-x { margin-left: auto; background: none; border: none; color: var(--text-faint); font-size: 18px; line-height: 1; padding: 0 4px; }
+.reply-x:hover { color: var(--danger); }
+.emoji-pop { display: flex; flex-wrap: wrap; gap: 3px; padding: 10px 12px; border-bottom: 1px solid var(--border); max-height: 150px; overflow-y: auto; }
+.emoji-pop button { background: none; border: none; font-size: 20px; padding: 3px 5px; border-radius: 6px; line-height: 1; }
+.emoji-pop button:hover { background: var(--bg); }
+.emoji-btn { background: none; border: none; font-size: 20px; padding: 0 4px; line-height: 1; }
