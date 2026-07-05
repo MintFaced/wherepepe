@@ -417,3 +417,28 @@ img.avatar { object-fit: cover; }
   vertical-align: middle; margin-left: 8px;
 }
 .online-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--pepe-bright); box-shadow: 0 0 6px var(--pepe-bright); }
+
+/* Ownership tags (wrapped vs native) on profile cards */
+.own-tags { display: flex; gap: 5px; flex-wrap: wrap; }
+.own-tag { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 5px; font-family: var(--mono); }
+.own-tag--wrapped { color: var(--eth); background: #7b8cff18; border: 1px solid #2c3468; }
+.own-tag--native { color: var(--btc); background: #f7931a15; border: 1px solid #4a3413; }
+.wallet-xcp { color: var(--btc); }
+
+/* Reactions */
+.reactions { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; align-items: center; }
+.react-chip { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--bg-card); border: 1px solid var(--border-solid); color: var(--text-dim); }
+.react-chip.mine { border-color: var(--pepe-deep); background: #2f7a2a22; color: var(--pepe-bright); }
+.react-chip:disabled { cursor: default; }
+.react-addwrap { position: relative; display: inline-flex; }
+.react-add { font-size: 12px; background: none; border: 1px dashed var(--border-solid); border-radius: 999px; color: var(--text-faint); padding: 2px 8px; }
+.react-add:hover { color: var(--pepe); border-color: var(--pepe-deep); }
+.react-pick { position: absolute; bottom: 100%; left: 0; margin-bottom: 4px; display: flex; gap: 2px; background: var(--bg-raised); border: 1px solid var(--border-solid); border-radius: 10px; padding: 6px; z-index: 20; box-shadow: var(--shadow); }
+.react-pick button { background: none; border: none; font-size: 18px; padding: 2px 4px; border-radius: 6px; }
+.react-pick button:hover { background: var(--bg-card); }
+
+/* PFP upload */
+.pfp-upload { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+.upload-btn { display: inline-block; background: var(--bg-card); border: 1px solid var(--border-solid); border-radius: var(--radius-sm); padding: 8px 14px; font-size: 13px; font-weight: 600; color: var(--text-dim); cursor: pointer; }
+.upload-btn:hover { border-color: var(--pepe-deep); color: var(--text); }
+.upload-preview { width: 42px; height: 42px; border-radius: 8px; object-fit: cover; border: 1px solid var(--pepe); }

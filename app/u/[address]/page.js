@@ -46,11 +46,13 @@ export default async function WalletPage({ params }) {
             <div className="sub">{shortAddr(w.address)}</div>
             <div className="wallet-stats">
               <span><b>{w.count.toLocaleString()}</b> cards</span>
-              <span><b>{w.editionsTotal.toLocaleString()}</b> editions</span>
-              <span><b style={{ color: 'var(--eth)' }}>{fmtEth(w.totalValueEth)}</b> value</span>
+              <span><b style={{ color: 'var(--eth)' }}>{w.wrappedTotal.toLocaleString()}</b> wrapped</span>
+              {w.nativeTotal > 0 && <span><b style={{ color: 'var(--btc)' }}>{w.nativeTotal.toLocaleString()}</b> native</span>}
+              <span><b>{fmtEth(w.totalValueEth)}</b> value</span>
             </div>
-            <div className="wallet-emblem" title="Collection held in Emblem Vaults">
-              🔐 Secured by <b>Emblem Vault</b>{w.vaultTotal ? ` · ${w.vaultTotal.toLocaleString()} vaults` : ''}
+            <div className="wallet-emblem" title="Wrapped collection held in Emblem Vaults">
+              🔐 Wrapped in <b>Emblem Vault</b>{w.vaultTotal ? ` · ${w.vaultTotal.toLocaleString()} vaults` : ''}
+              {w.xcp && <span className="wallet-xcp"> · 🟧 native wallet linked</span>}
             </div>
           </div>
           <a

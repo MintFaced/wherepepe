@@ -163,9 +163,13 @@ case-sensitive — always query the checksummed address.)*
 **Chat presence:** a Redis sorted-set tracks who polled in the last 30s → an
 "N online" pill in the ChatPepe header.
 
-**Chat features:** emoji picker, threaded **replies** (the quote is looked up
-server-side so it can't be forged), a **HOLDER** badge, and an **RP ARTIST**
-badge. Artists are an admin allowlist (no reliable ETH-wallet→artist link
+**Chat features:** emoji picker, threaded **replies** (quote looked up
+server-side so it can't be forged), **emoji reactions** on any message, a
+**HOLDER** badge, and an **RP ARTIST** badge. Profiles support a **custom
+handle**, a **PFP** (pick a Rare Pepe you own *or upload your own* — resized
+client-side to a small data-URL, no blob store needed), and **linking a free
+Counterparty/BTC wallet** so your profile shows native + wrapped holdings, each
+tagged. Chat edits flow through to the `/u/` profile immediately. Artists are an admin allowlist (no reliable ETH-wallet→artist link
 exists) — designate one:
 ```bash
 curl -X POST https://<your-app>/api/chat/admin/artist \

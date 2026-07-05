@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { verifyToken, getProfile, setProfile, validateHandle, identityFor, chatConfigured } from '../../../../lib/chat';
+import { verifyToken, getProfile, setProfile, validateHandle, validateBtcAddress, identityFor, chatConfigured } from '../../../../lib/chat';
 import { getCardMeta } from '../../../../lib/catalog';
 
 export const runtime = 'nodejs';
@@ -13,6 +13,7 @@ function shape(address, holder, profile) {
     handle: profile?.handle || ident.handle,
     pfp: profile?.pfpImage || null,
     pfpAsset: profile?.pfpAsset || null,
+    xcp: profile?.xcp || null,
     customHandle: Boolean(profile?.handle),
   };
 }
@@ -44,7 +45,15 @@ export async function POST(request) {
     }
   }
 
-  if ('pfpAsset' in body) {
+  // Uploaded image PFP takes precedence when present.
+  if (body.pfpUpload) {
+    const url = String(body.pfpUpload);
+    if (!/^data:image\/(png|jpeg|webp|gif);base64,/.test(url) || url.length > 60000) {
+      return NextResponse.json({ ok: false, error: 'Image invalid or too large (≈40KB max).' }, { status: 400 });
+    }
+    merged.pfpImage = url;
+    delete merged.pfpAsset;
+  } else if ('pfpAsset' in body) {
     if (!body.pfpAsset) {
       delete merged.pfpAsset; delete merged.pfpImage; // reset to gradient
     } else {
@@ -54,6 +63,12 @@ export async function POST(request) {
       merged.pfpAsset = meta.asset;
       merged.pfpImage = meta.image || meta.media || null;
     }
+  }
+
+  if ('xcp' in body) {
+    const v = validateBtcAddress(body.xcp);
+    if (v === null) return NextResponse.json({ ok: false, error: 'Invalid Bitcoin address.' }, { status: 400 });
+    if (v) merged.xcp = v; else delete merged.xcp;
   }
 
   await setProfile(session.address, merged);

@@ -26,7 +26,6 @@ export default function WalletGrid({ cards }) {
             <div className="tile-img">
               {c.image ? <img src={c.image} alt={c.title} loading="lazy" /> : null}
               {c.series != null && <span className="tile-serie">S{c.series}·{c.card}</span>}
-              {c.editions > 1 && <span className="tile-editions">×{c.editions}</span>}
             </div>
             <div className="tile-body">
               <div className="tile-name" title={c.title}>{c.title}</div>
@@ -34,6 +33,12 @@ export default function WalletGrid({ cards }) {
                 <span style={{ color: 'var(--eth)' }}>Value</span>
                 <b className="tile-floor">{fmtEth(c.floorEth)}</b>
               </div>
+              {(c.wrapped > 0 || c.native > 0) && (
+                <div className="own-tags">
+                  {c.wrapped > 0 && <span className="own-tag own-tag--wrapped">×{c.wrapped} wrapped</span>}
+                  {c.native > 0 && <span className="own-tag own-tag--native">×{c.native} native</span>}
+                </div>
+              )}
             </div>
           </Link>
         ))}

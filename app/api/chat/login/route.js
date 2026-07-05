@@ -46,6 +46,7 @@ export async function POST(request) {
       handle: profile?.handle || identity.handle,
       pfp: profile?.pfpImage || null,
       pfpAsset: profile?.pfpAsset || null,
+      xcp: profile?.xcp || null,
     },
   });
 }

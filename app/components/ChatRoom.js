@@ -9,6 +9,32 @@ const TOKEN_KEY = 'chatpepe:token';
 const IDENT_KEY = 'chatpepe:identity';
 const EMOJIS = ['🐸', '🐋', '💎', '🚀', '🔥', '😂', '😎', '👀', '🙌', '💚', '🤝', '🫡',
   '😭', '🤔', '👍', '🎉', '💰', '📈', '📉', '🧠', '🤯', '😤', '🙏', '✨', '🐳', '🫶', '💀', '🥲', '🤡', '👑'];
+const REACTIONS = ['🐸', '🔥', '💎', '🚀', '😂', '💚', '👀', '🙌', '😭', '💀'];
+
+// Resize/crop an image File to a small square webp data URL for a PFP.
+function fileToPfp(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = reject;
+      img.onload = () => {
+        const size = 128;
+        const canvas = document.createElement('canvas');
+        canvas.width = size; canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        const s = Math.min(img.width, img.height);
+        ctx.drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, size, size);
+        let out = canvas.toDataURL('image/webp', 0.8);
+        if (out.length > 58000) out = canvas.toDataURL('image/webp', 0.5);
+        resolve(out);
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
 
 export default function ChatRoom() {
   const [identity, setIdentity] = useState(null);
@@ -24,6 +50,8 @@ export default function ChatRoom() {
   const [myPepes, setMyPepes] = useState([]);
   const [handleInput, setHandleInput] = useState('');
   const [selectedPfp, setSelectedPfp] = useState(null);
+  const [xcpInput, setXcpInput] = useState('');
+  const [pfpUpload, setPfpUpload] = useState(null);
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileErr, setProfileErr] = useState('');
   const [replyTarget, setReplyTarget] = useState(null);
@@ -124,6 +152,8 @@ export default function ChatRoom() {
     setProfileErr('');
     setHandleInput(identity?.handle || '');
     setSelectedPfp(identity?.pfpAsset || null);
+    setXcpInput(identity?.xcp || '');
+    setPfpUpload(null);
     setShowProfile(true);
     if (myPepes.length === 0) {
       fetch(`/api/chat/my-pepes?token=${encodeURIComponent(token)}`)
@@ -131,13 +161,29 @@ export default function ChatRoom() {
     }
   }
 
+  async function onUpload(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const dataUrl = await fileToPfp(file);
+      if (dataUrl.length > 60000) { setProfileErr('Image too detailed — try a simpler one.'); return; }
+      setPfpUpload(dataUrl);
+      setSelectedPfp(null);
+    } catch {
+      setProfileErr('Could not read that image.');
+    }
+  }
+
   async function saveProfile() {
     setSavingProfile(true); setProfileErr('');
     try {
+      const payload = { token, handle: handleInput, xcp: xcpInput };
+      if (pfpUpload) payload.pfpUpload = pfpUpload;
+      else payload.pfpAsset = selectedPfp;
       const res = await fetch('/api/chat/profile', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ token, handle: handleInput, pfpAsset: selectedPfp }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!data.ok) { setProfileErr(data.error || 'Could not save.'); return; }
@@ -149,6 +195,17 @@ export default function ChatRoom() {
     } finally {
       setSavingProfile(false);
     }
+  }
+
+  async function react(msgId, emoji) {
+    try {
+      await fetch('/api/chat/react', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ token, msgId, emoji }),
+      });
+      loadMessages();
+    } catch {}
   }
 
   async function send(e) {
@@ -209,6 +266,7 @@ export default function ChatRoom() {
                 m={m}
                 mine={identity && m.address === identity.address}
                 onReply={identity && identity.holder ? () => { setReplyTarget({ id: m.id, handle: m.handle, text: m.text }); } : null}
+                onReact={identity && identity.holder ? (emoji) => react(m.id, emoji) : null}
               />
             ))}
           </div>
@@ -315,6 +373,24 @@ export default function ChatRoom() {
                 {myPepes.length === 0 && <div className="pfp-empty">Loading your Rare Pepes…</div>}
               </div>
 
+              <div className="pfp-upload">
+                <label className="upload-btn">
+                  ⬆ Upload your own
+                  <input type="file" accept="image/*" onChange={onUpload} hidden />
+                </label>
+                {pfpUpload && <img className="upload-preview" src={pfpUpload} alt="preview" />}
+                {pfpUpload && <button type="button" className="linkbtn" onClick={() => setPfpUpload(null)}>remove</button>}
+              </div>
+
+              <label className="modal-label">Link a free wallet (Counterparty / BTC) — shows your native Rare Pepes on your profile</label>
+              <input
+                className="modal-input"
+                value={xcpInput}
+                onChange={(e) => setXcpInput(e.target.value)}
+                placeholder="1… or bc1…"
+                spellCheck={false}
+              />
+
               {profileErr ? <div className="chat-error">{profileErr}</div> : null}
               <div className="modal-actions">
                 <button className="linkbtn" onClick={() => setShowProfile(false)}>Cancel</button>
@@ -328,7 +404,8 @@ export default function ChatRoom() {
   );
 }
 
-function Message({ m, mine, onReply }) {
+function Message({ m, mine, onReply, onReact }) {
+  const [pick, setPick] = useState(false);
   const time = new Date(m.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   return (
     <div className={`msg${mine ? ' msg--mine' : ''}`}>
@@ -350,6 +427,30 @@ function Message({ m, mine, onReply }) {
           </div>
         )}
         <div className="msg-text">{m.text}</div>
+        {(m.reactions?.length > 0 || onReact) && (
+          <div className="reactions">
+            {(m.reactions || []).map((r) => (
+              <button
+                key={r.emoji}
+                className={`react-chip${r.mine ? ' mine' : ''}`}
+                onClick={() => onReact && onReact(r.emoji)}
+                disabled={!onReact}
+              >{r.emoji} {r.count}</button>
+            ))}
+            {onReact && (
+              <span className="react-addwrap">
+                <button className="react-add" onClick={() => setPick((v) => !v)} title="React">😊﹢</button>
+                {pick && (
+                  <div className="react-pick">
+                    {REACTIONS.map((e) => (
+                      <button key={e} onClick={() => { onReact(e); setPick(false); }}>{e}</button>
+                    ))}
+                  </div>
+                )}
+              </span>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
