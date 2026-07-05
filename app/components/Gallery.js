@@ -60,9 +60,12 @@ export default function Gallery({ initialCards, emblemVaultedTotal }) {
 
   const artistOptions = useMemo(() => {
     const s = new Set();
-    cards.forEach((c) => c.artist && isRealArtist(c.artist) && s.add(c.artist));
+    cards.forEach((c) => {
+      if (collection !== 'all' && c.collection !== collection) return;
+      if (c.artist && isRealArtist(c.artist)) s.add(c.artist);
+    });
     return [...s].sort((a, b) => a.localeCompare(b));
-  }, [cards]);
+  }, [cards, collection]);
 
   const summary = useMemo(() => {
     if (!available) return null;
@@ -105,6 +108,7 @@ export default function Gallery({ initialCards, emblemVaultedTotal }) {
   }, [cards, query, collection, series, artist, sort, view, floors, available]);
 
   useEffect(() => { setVisible(PAGE); }, [query, collection, series, artist, sort, view]);
+  useEffect(() => { setArtist('all'); }, [collection]); // artist list is per-collection
   const shown = filtered.slice(0, visible);
 
   const sentinel = useRef(null);
