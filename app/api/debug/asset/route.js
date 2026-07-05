@@ -45,9 +45,14 @@ export async function GET(request) {
     const d = await get(`${OS}/listings/collection/${col.osSlug}/best?limit=100${lc ? `&next=${encodeURIComponent(lc)}` : ''}`);
     for (const l of d.listings || []) {
       totalListings += 1;
-      const tid = String(l?.asset?.identifier || l?.protocol_data?.parameters?.offer?.[0]?.identifierOrCriteria || '');
+      const offer0 = l?.protocol_data?.parameters?.offer?.[0];
+      const tid = String(l?.asset?.identifier || offer0?.identifierOrCriteria || '');
       const c = l?.price?.current;
-      if (tid && tokenIds.has(tid) && c) forAsset.push({ tokenId: tid.slice(0, 12) + '…', eth: Number(c.value) / 10 ** (c.decimals || 18), cur: c.currency });
+      if (tid && tokenIds.has(tid) && c) {
+        const total = Number(c.value) / 10 ** (c.decimals || 18);
+        const qty = Math.max(1, Number(offer0?.startAmount) || Number(l?.remaining_quantity) || 1);
+        forAsset.push({ tokenId: tid.slice(0, 12) + '…', totalEth: total, qty, eth: total / qty, cur: c.currency });
+      }
     }
     lc = d.next || null; lp += 1;
     if (lp >= 120) { listCapped = Boolean(lc); break; }
