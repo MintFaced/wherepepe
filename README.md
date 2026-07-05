@@ -149,6 +149,11 @@ own**. Messages poll every ~3s.
 > The floor snapshot (below) is also stored in this same KV — the cron writes
 > it, reads read it, and a failed sweep never wipes the last-good data.
 
+**Wallet profiles (`/u/[address]`):** clicking a handle in chat opens that
+wallet's public profile — its Rare Pepe collection (from OpenSea), each card
+valued at the wrapped floor, with a collection total, sortable **by series** or
+**by value**.
+
 **Setup (one-time):**
 1. In Vercel: **Storage → Create Database → KV (Upstash Redis)**, then connect it
    to this project. That injects `KV_REST_API_URL` + `KV_REST_API_TOKEN`.

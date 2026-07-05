@@ -300,7 +300,7 @@ function Message({ m, mine }) {
         : <span className="avatar" style={{ background: m.avatar }} aria-hidden="true" />}
       <div className="msg-body">
         <div className="msg-meta">
-          <span className="msg-handle">{m.handle}</span>
+          <a href={`/u/${m.address}`} className="msg-handle">{m.handle}</a>
           {m.holder && <span className="holder">HOLDER</span>}
           <span className="msg-time">{time}</span>
         </div>
