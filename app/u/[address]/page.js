@@ -3,6 +3,7 @@ import { isAddress } from 'viem';
 import { notFound } from 'next/navigation';
 import Header from '../../components/Header';
 import WalletGrid from '../../components/WalletGrid';
+import LinkWallet from '../../components/LinkWallet';
 import { walletCollection } from '../../../lib/wallet';
 import { fmtEth } from '../../../lib/format';
 
@@ -62,6 +63,8 @@ export default async function WalletPage({ params }) {
             rel="noopener noreferrer"
           >OpenSea ↗</a>
         </div>
+
+        <LinkWallet profileAddress={w.address} currentXcp={w.xcp} />
 
         {w.count === 0 ? (
           <div className="loadmore">No Rare Pepes in this wallet yet. 🐸</div>

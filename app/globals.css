@@ -466,3 +466,11 @@ img.avatar { object-fit: cover; }
 .mention-pop { display: flex; flex-direction: column; border-bottom: 1px solid var(--border); background: var(--bg-card); max-height: 200px; overflow-y: auto; }
 .mention-opt { text-align: left; background: none; border: none; color: var(--pepe-bright); font-weight: 600; font-size: 14px; padding: 9px 14px; }
 .mention-opt:hover { background: var(--bg); }
+
+/* Link free wallet (own profile) */
+.link-wallet { background: var(--bg-card); border: 1px solid var(--border-solid); border-radius: var(--radius); padding: 16px 18px; margin: 8px 0 20px; }
+.link-wallet-label { font-size: 13px; color: var(--text-dim); margin-bottom: 10px; }
+.link-wallet-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.link-wallet-row input { flex: 1; min-width: 240px; background: var(--bg); border: 1px solid var(--border-solid); border-radius: var(--radius-sm); color: var(--text); padding: 0 12px; height: 40px; font-size: 14px; font-family: var(--mono); outline: none; }
+.link-wallet-row input:focus { border-color: var(--btc); }
+.link-wallet-status { margin-top: 10px; font-size: 13px; color: var(--pepe-bright); }
