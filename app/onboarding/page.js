@@ -2,11 +2,18 @@ import Link from 'next/link';
 import Header from '../components/Header';
 
 const EXAMPLE = '/u/0xd40b63bf04a44e43fbfe5784bcf22acaab34a180';
+const IMG = 'https://pepewtf.s3.amazonaws.com/collections';
+const QUAD = {
+  rare: `${IMG}/rare-pepes/small/1/RAREPEPE.jpg`,
+  fake: `${IMG}/fake-rares/small/0/FREEDOMKEK.jpeg`,
+  native: `${IMG}/rare-pepes/small/1/DANKPEPE.jpg`,
+  emblem: `${IMG}/rare-pepes/small/1/GOXPEPE.jpg`,
+};
 
 export const metadata = {
-  title: 'Create your WherePepe profile',
-  description: 'See every Rare Pepe & Fake Rare you own — wrapped and native — in one place, valued in ETH. Plus a seat at ChatPepe.',
-  openGraph: { title: 'Create your WherePepe profile', description: 'Your whole pepe collection in one place, valued in ETH.', images: ['/og.png'], type: 'website' },
+  title: 'Claim your PepeProfile — WherePepe',
+  description: 'Your whole pepe collection in one view — Rares & Fake Rares, wrapped and native. Plus a seat at ChatPepe.',
+  openGraph: { title: 'Claim your PepeProfile 🐸', description: 'Your whole pepe collection in one view. Plus a seat at ChatPepe.', images: ['/og.png'], type: 'website' },
 };
 
 export default function OnboardingPage() {
@@ -15,33 +22,52 @@ export default function OnboardingPage() {
       <Header />
       <div className="container onboard">
         <div className="onboard-hero">
-          <h1>Create your WherePepe profile 🐸</h1>
-          <p>Your whole pepe collection — <b>Rare Pepe &amp; Fake Rare</b>, wrapped and native — in one place, valued in ETH. Plus a seat at ChatPepe.</p>
+          <h1>Claim your PepeProfile 🐸</h1>
+          <p>Your whole pepe collection in one view. <b>Rares &amp; Fake Rares, wrapped and native</b> — in one place. Plus a seat at ChatPepe.</p>
           <div className="hero-cta">
-            <Link href="/chat" className="cta cta-primary">Connect wallet →</Link>
+            <Link href="/chat" className="cta cta-primary">Claim your profile →</Link>
             <a href={EXAMPLE} className="cta cta-secondary">View example profile</a>
           </div>
         </div>
 
-        <div className="onboard-benefits">
-          <div className="benefit">
-            <div className="benefit-icon">🖼️</div>
-            <h3>All your cards in one place</h3>
-            <p>Every Rare Pepe and Fake Rare you own — <span style={{ color: 'var(--eth)' }}>wrapped in Emblem Vault</span> (ETH) and <span style={{ color: 'var(--btc)' }}>native on Counterparty</span> (BTC) — with per-card floor values, editions owned, and a collection total. Filter by collection, sort by value.</p>
+        {/* Quad: two collections × two locations */}
+        <div className="onboard-quad">
+          <div className="quad-block">
+            <div className="quad-label">Pepe Collection</div>
+            <div className="quad-row">
+              <div className="qcard qcard--rare">
+                <img src={QUAD.rare} alt="Rare Pepe" loading="lazy" />
+                <span className="qcard-tag">Rare Pepe</span>
+              </div>
+              <div className="qcard qcard--fake">
+                <img src={QUAD.fake} alt="Fake Rare" loading="lazy" />
+                <span className="qcard-tag">Fake Rare</span>
+              </div>
+            </div>
           </div>
-          <div className="benefit">
-            <div className="benefit-icon">💬</div>
-            <h3>Chat with fellow pepe owners</h3>
-            <p>ChatPepe is a holder-gated lounge for collectors. React, reply, @tag, set a Rare Pepe as your PFP, and talk shop with people who actually own the cards. Click any handle to see their collection.</p>
+          <div className="quad-block">
+            <div className="quad-label">Held on</div>
+            <div className="quad-row">
+              <div className="qcard qcard--native">
+                <img src={QUAD.native} alt="On Native" loading="lazy" />
+                <span className="qcard-tag">On Native · BTC</span>
+              </div>
+              <div className="qcard qcard--emblem">
+                <img src={QUAD.emblem} alt="On Emblem" loading="lazy" />
+                <span className="qcard-tag">On Emblem · ETH</span>
+              </div>
+            </div>
           </div>
         </div>
+
+        <div className="onboard-callout">🐸 You must own at least one Rare Pepe to use ChatPepe.</div>
 
         <div className="onboard-steps">
           <h2>How it works</h2>
           <ol className="steps">
-            <li><span className="step-n">1</span><div><b>Connect your wallet</b> — one free signature in ChatPepe (no gas). Your profile is created instantly with a Pepe identity.</div></li>
-            <li><span className="step-n">2</span><div><b>Link your free wallet</b> <span className="muted">(optional)</span> — add your Counterparty / BTC address on your profile to surface your native pepes too.</div></li>
-            <li><span className="step-n">3</span><div><b>You’re live</b> — your profile lives at <code>wherepepe.com/u/your-address</code>. Share it, and browse anyone else’s from chat.</div></li>
+            <li><span className="step-n">1</span><div><b>Go to ChatPepe and connect your wallet.</b> <span className="muted">One gas-free signature and your profile is created.</span></div></li>
+            <li><span className="step-n">2</span><div><b>Share your Counterparty wallet address</b> and your native pepes appear on your profile.</div></li>
+            <li><span className="step-n">3</span><div><b>Share your profile in ChatPepe.</b> It lives at <code>wherepepe.com/u/your-address</code>.</div></li>
           </ol>
         </div>
 
@@ -54,7 +80,7 @@ export default function OnboardingPage() {
         </div>
 
         <div className="onboard-foot">
-          <Link href="/chat" className="cta cta-primary">Create your profile →</Link>
+          <Link href="/chat" className="cta cta-primary">Claim your PepeProfile →</Link>
         </div>
       </div>
     </>
