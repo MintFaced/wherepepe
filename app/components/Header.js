@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import ChatNav from './ChatNav';
+import ProfileNav from './ProfileNav';
 
 export default function Header({ right }) {
   return (
@@ -13,6 +14,7 @@ export default function Header({ right }) {
         <nav className="header-nav">
           <Link href="/">Prices</Link>
           <ChatNav />
+          <ProfileNav />
         </nav>
         {right ? <div className="header-stats">{right}</div> : null}
       </div>

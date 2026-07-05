@@ -530,3 +530,16 @@ img.avatar { object-fit: cover; }
 .qcard--emblem { border-color: #2c3468; }          .qcard--emblem .qcard-tag { color: var(--eth); }
 
 .onboard-callout { background: #2f7a2a1a; border: 1px solid var(--pepe-deep); color: var(--pepe-bright); border-radius: var(--radius); padding: 14px 18px; text-align: center; font-weight: 700; font-size: 15px; margin: 26px 0; }
+
+/* ─── ChatPepe notifications ──────────────────────────────────────────── */
+.header-chatlink { display: inline-flex; align-items: center; position: relative; }
+@keyframes notif-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(127, 224, 106, 0.6); }
+  70%  { box-shadow: 0 0 0 7px rgba(127, 224, 106, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(127, 224, 106, 0); }
+}
+.notif-dot.pulse { animation: notif-pulse 1.5s infinite; }
+.notif-count { display: inline-block; background: var(--pepe-deep); color: #fff; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 5px; margin-left: 6px; vertical-align: middle; }
+.notif-pop { position: absolute; top: 100%; left: 0; margin-top: 8px; background: var(--bg-raised); border: 1px solid var(--border-solid); border-radius: 10px; padding: 12px 14px; box-shadow: var(--shadow); z-index: 60; width: max-content; max-width: 260px; }
+.notif-pop-row { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--pepe-bright); margin-bottom: 8px; }
+.notif-pop-box { background: var(--bg-card); border: 1px solid var(--border-solid); border-radius: 8px; padding: 8px 10px; font-size: 13px; color: var(--text-dim); text-align: center; font-weight: 600; }
