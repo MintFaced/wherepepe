@@ -4,6 +4,7 @@ import Header from '../../components/Header';
 import { getCardMeta } from '../../../lib/catalog';
 import { getNative } from '../../../lib/native';
 import { getWrappedForCard } from '../../../lib/wrapped';
+import { COLLECTIONS } from '../../../lib/collections';
 import { fmtEth, fmtBtc, fmtXcp, fmtUsd, fmtInt, fmtSupply, fmtPct } from '../../../lib/format';
 
 export const revalidate = 3600;
@@ -63,7 +64,7 @@ export default async function CardPage({ params }) {
 
           <div>
             <h1>{meta.title || key}</h1>
-            <div className="sub">Series {meta.series} · Card {meta.card} · {key}</div>
+            <div className="sub">{(COLLECTIONS[meta.collection] || COLLECTIONS['rare-pepe']).label} · Series {meta.series} · Card {meta.card} · {key}</div>
 
             <div className={`verdict verdict--${verdict.cls}`}>
               <span>{verdict.label}</span>
@@ -97,7 +98,7 @@ export default async function CardPage({ params }) {
             <div className="links">
               <a href={`https://pepe.wtf/asset/${key}`} target="_blank" rel="noopener noreferrer">pepe.wtf ↗</a>
               <a href={`https://tokenscan.io/asset/${key}`} target="_blank" rel="noopener noreferrer">tokenscan ↗</a>
-              <a href="https://opensea.io/collection/rare-pepe-curated" target="_blank" rel="noopener noreferrer">Emblem on OpenSea ↗</a>
+              <a href={`https://opensea.io/collection/${(COLLECTIONS[meta.collection] || COLLECTIONS['rare-pepe']).osSlug}`} target="_blank" rel="noopener noreferrer">Emblem on OpenSea ↗</a>
             </div>
           </div>
         </div>

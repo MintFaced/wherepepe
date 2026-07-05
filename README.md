@@ -2,10 +2,12 @@
 
 **Where's this pepe cheapest?**
 
-For each of the 1,774 cards in the Rare Pepe Directory, Where Pepe compares the
-floor price **native** on Counterparty (Bitcoin) against the floor **wrapped** in
-Emblem Vault (Ethereum) — both in **ETH** — and tells you which side is cheaper,
-and by how much. It also shows the authoritative total of Rare Pepes vaulted in
+Covers **two collections** — the 1,774 **Rare Pepes** and the 904 **Fake Rares**
+(config in `lib/collections.js`; each maps a pepe.wtf collection to its
+Emblem-curated OpenSea collection + ERC-1155 contract). For every card it
+compares the floor **native** on Counterparty (Bitcoin) vs **wrapped** in Emblem
+Vault (Ethereum) — both in **ETH** — and tells you which is cheaper. Pricing,
+profiles, and the collection view all filter by collection. It also shows the authoritative total of Rare Pepes vaulted in
 Emblem (from Emblem's own API).
 
 Built with Next.js (App Router). All external data is fetched server-side; no

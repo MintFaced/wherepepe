@@ -474,3 +474,7 @@ img.avatar { object-fit: cover; }
 .link-wallet-row input { flex: 1; min-width: 240px; background: var(--bg); border: 1px solid var(--border-solid); border-radius: var(--radius-sm); color: var(--text); padding: 0 12px; height: 40px; font-size: 14px; font-family: var(--mono); outline: none; }
 .link-wallet-row input:focus { border-color: var(--btc); }
 .link-wallet-status { margin-top: 10px; font-size: 13px; color: var(--pepe-bright); }
+
+/* Collection badge on tiles */
+.tile-col { position: absolute; top: 8px; right: 8px; font-family: var(--mono); font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 6px; letter-spacing: 0.05em; }
+.tile-col--fake { background: #0b0f0ccc; color: #d9a6ff; border: 1px solid #4a2d6b; }

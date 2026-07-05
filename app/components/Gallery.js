@@ -21,6 +21,7 @@ function isRealArtist(a) {
 export default function Gallery({ initialCards, emblemVaultedTotal }) {
   const cards = initialCards || [];
   const [query, setQuery] = useState('');
+  const [collection, setCollection] = useState('all');
   const [series, setSeries] = useState('all');
   const [artist, setArtist] = useState('all');
   const [sort, setSort] = useState('series');
@@ -76,6 +77,7 @@ export default function Gallery({ initialCards, emblemVaultedTotal }) {
       return vals.length ? Math.min(...vals) : Infinity;
     };
     let list = cards.filter((c) => {
+      if (collection !== 'all' && c.collection !== collection) return false;
       if (series !== 'all' && String(c.series) !== series) return false;
       if (artist !== 'all' && c.artist !== artist) return false;
       if (q && !c.asset.includes(q) && !(c.title || '').toUpperCase().includes(q) && !(c.artist || '').toUpperCase().includes(q)) return false;
@@ -94,9 +96,9 @@ export default function Gallery({ initialCards, emblemVaultedTotal }) {
       }
     });
     return list;
-  }, [cards, query, series, artist, sort, view, floors, available]);
+  }, [cards, query, collection, series, artist, sort, view, floors, available]);
 
-  useEffect(() => { setVisible(PAGE); }, [query, series, artist, sort, view]);
+  useEffect(() => { setVisible(PAGE); }, [query, collection, series, artist, sort, view]);
   const shown = filtered.slice(0, visible);
 
   const sentinel = useRef(null);
@@ -149,6 +151,12 @@ export default function Gallery({ initialCards, emblemVaultedTotal }) {
             <span aria-hidden="true">🔍</span>
             <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by card name…" aria-label="Search cards" />
           </label>
+
+          <div className="toggle-group" role="group" aria-label="Collection">
+            <button className={collection === 'all' ? 'active' : ''} onClick={() => setCollection('all')}>All</button>
+            <button className={collection === 'rare-pepe' ? 'active' : ''} onClick={() => setCollection('rare-pepe')}>Rare Pepe</button>
+            <button className={collection === 'fake-rare' ? 'active' : ''} onClick={() => setCollection('fake-rare')}>Fake Rare</button>
+          </div>
 
           <select className="select" value={series} onChange={(e) => setSeries(e.target.value)} aria-label="Filter by series">
             <option value="all">All series</option>
@@ -208,6 +216,7 @@ function Tile({ card, entry, ready }) {
       <div className="tile-img">
         {card.image ? <img src={card.image} alt={card.title || card.asset} loading="lazy" /> : null}
         <span className="tile-serie">S{card.series}·{card.card}</span>
+        {card.collection === 'fake-rare' && <span className="tile-col tile-col--fake">FAKE</span>}
       </div>
       <div className="tile-body">
         <div className="tile-name" title={card.title || card.asset}>{card.title || card.asset}</div>
