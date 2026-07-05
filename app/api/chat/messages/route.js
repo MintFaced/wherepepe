@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { listMessages, chatConfigured, verifyToken, touchPresence, getAllReactions } from '../../../../lib/chat';
+import { listMessages, chatConfigured, verifyToken, touchPresence, getAllReactions, markSeen } from '../../../../lib/chat';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -33,6 +33,7 @@ export async function GET(request) {
 
     const withReactions = messagesAll.map((m) => ({ ...m, reactions: byMsg[m.id] || [] }));
     const messages = since > 0 ? withReactions.filter((m) => m.ts > since) : withReactions;
+    if (session?.address) markSeen(session.address).catch(() => {}); // viewing chat clears mentions
     return NextResponse.json({ ok: true, configured: true, messages, online });
   } catch (e) {
     return NextResponse.json({ ok: false, configured: true, messages: [], online: 0, error: String(e) }, { status: 200 });

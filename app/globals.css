@@ -442,3 +442,22 @@ img.avatar { object-fit: cover; }
 .upload-btn { display: inline-block; background: var(--bg-card); border: 1px solid var(--border-solid); border-radius: var(--radius-sm); padding: 8px 14px; font-size: 13px; font-weight: 600; color: var(--text-dim); cursor: pointer; }
 .upload-btn:hover { border-color: var(--pepe-deep); color: var(--text); }
 .upload-preview { width: 42px; height: 42px; border-radius: 8px; object-fit: cover; border: 1px solid var(--pepe); }
+
+/* @mentions */
+.mention { color: var(--pepe); font-weight: 600; }
+.mention.mine { color: var(--pepe-bright); background: #2f7a2a33; border-radius: 4px; padding: 0 3px; }
+
+/* Message actions (reply + delete) */
+.msg-actions { margin-left: auto; display: flex; gap: 4px; opacity: 0.55; }
+.msg:hover .msg-actions { opacity: 1; }
+.msg-actions .msg-reply, .msg-actions .msg-del { margin-left: 0; opacity: 1; }
+.msg-del { background: none; border: none; color: var(--text-faint); font-size: 12px; padding: 0 2px; }
+.msg-del:hover { color: var(--danger); }
+
+/* Header notification dot */
+.header-chatlink { position: relative; }
+.notif-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--pepe-bright); box-shadow: 0 0 6px var(--pepe-bright); margin-left: 5px; vertical-align: middle; }
+
+/* +emoji react button at 40% */
+.react-add { opacity: 0.4; }
+.react-add:hover { opacity: 1; }

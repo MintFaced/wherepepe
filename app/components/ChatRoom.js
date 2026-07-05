@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import Header from './Header';
 import { fmtEth } from '../../lib/format';
 
@@ -10,6 +10,32 @@ const IDENT_KEY = 'chatpepe:identity';
 const EMOJIS = ['🐸', '🐋', '💎', '🚀', '🔥', '😂', '😎', '👀', '🙌', '💚', '🤝', '🫡',
   '😭', '🤔', '👍', '🎉', '💰', '📈', '📉', '🧠', '🤯', '😤', '🙏', '✨', '🐳', '🫶', '💀', '🥲', '🤡', '👑'];
 const REACTIONS = ['🐸', '🔥', '💎', '🚀', '😂', '💚', '👀', '🙌', '😭', '💀'];
+
+// Render message text, highlighting @handle mentions green (brighter if it's you).
+function renderText(text, handles, myHandle) {
+  const t = String(text || '');
+  const out = [];
+  let buf = '';
+  let i = 0;
+  let key = 0;
+  const flush = () => { if (buf) { out.push(buf); buf = ''; } };
+  while (i < t.length) {
+    if (t[i] === '@') {
+      const rest = t.slice(i + 1);
+      const m = handles.find((h) => rest.startsWith(h));
+      if (m) {
+        flush();
+        out.push(<span key={`m${key++}`} className={`mention${m === myHandle ? ' mine' : ''}`}>@{m}</span>);
+        i += 1 + m.length;
+        continue;
+      }
+    }
+    buf += t[i];
+    i += 1;
+  }
+  flush();
+  return out;
+}
 
 // Resize/crop an image File to a small square webp data URL for a PFP.
 function fileToPfp(file) {
@@ -208,6 +234,25 @@ export default function ChatRoom() {
     } catch {}
   }
 
+  async function del(msgId) {
+    if (typeof window !== 'undefined' && !window.confirm('Delete this message?')) return;
+    try {
+      await fetch('/api/chat/delete', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ token, msgId }),
+      });
+      loadMessages();
+    } catch {}
+  }
+
+  // Known handles (longest-first) for @mention highlighting.
+  const handles = useMemo(() => {
+    const set = new Set();
+    messages.forEach((m) => m.handle && set.add(m.handle));
+    return [...set].sort((a, b) => b.length - a.length);
+  }, [messages]);
+
   async function send(e) {
     e?.preventDefault();
     const text = input.trim();
@@ -267,6 +312,9 @@ export default function ChatRoom() {
                 mine={identity && m.address === identity.address}
                 onReply={identity && identity.holder ? () => { setReplyTarget({ id: m.id, handle: m.handle, text: m.text }); } : null}
                 onReact={identity && identity.holder ? (emoji) => react(m.id, emoji) : null}
+                onDelete={identity && m.address === identity.address ? () => del(m.id) : null}
+                handles={handles}
+                myHandle={identity?.handle}
               />
             ))}
           </div>
@@ -404,7 +452,7 @@ export default function ChatRoom() {
   );
 }
 
-function Message({ m, mine, onReply, onReact }) {
+function Message({ m, mine, onReply, onReact, onDelete, handles, myHandle }) {
   const [pick, setPick] = useState(false);
   const time = new Date(m.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   return (
@@ -418,7 +466,10 @@ function Message({ m, mine, onReply, onReact }) {
           {m.artist && <span className="artist" title={`Rare Pepe Artist: ${m.artist}`}>RP ARTIST</span>}
           {m.holder && <span className="holder">HOLDER</span>}
           <span className="msg-time">{time}</span>
-          {onReply && <button className="msg-reply" onClick={onReply} title="Reply">↩</button>}
+          <span className="msg-actions">
+            {onReply && <button className="msg-reply" onClick={onReply} title="Reply">↩</button>}
+            {onDelete && <button className="msg-del" onClick={onDelete} title="Delete">🗑</button>}
+          </span>
         </div>
         {m.replyTo && (
           <div className="msg-quote">
@@ -426,7 +477,7 @@ function Message({ m, mine, onReply, onReact }) {
             <span className="msg-quote-text">{m.replyTo.text}</span>
           </div>
         )}
-        <div className="msg-text">{m.text}</div>
+        <div className="msg-text">{renderText(m.text, handles || [], myHandle)}</div>
         {(m.reactions?.length > 0 || onReact) && (
           <div className="reactions">
             {(m.reactions || []).map((r) => (

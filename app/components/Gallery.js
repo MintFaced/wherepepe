@@ -7,6 +7,17 @@ import { fmtEth, fmtPct } from '../../lib/format';
 
 const PAGE = 60;
 
+// Keep real artist names in the filter; drop BTC/ETH addresses & placeholders.
+function isRealArtist(a) {
+  const s = String(a || '').trim();
+  if (!s) return false;
+  if (/^(1|3)[a-km-zA-HJ-NP-Z1-9]{24,}$/.test(s) || /^bc1[a-z0-9]{20,}$/.test(s)) return false;
+  if (/^0x[a-fA-F0-9]{40}$/.test(s)) return false;
+  if (/^\d+$/.test(s)) return false;
+  if (['unknown', 'n/a', 'na', '?', 'none', 'tbd'].includes(s.toLowerCase())) return false;
+  return true;
+}
+
 export default function Gallery({ initialCards, emblemVaultedTotal }) {
   const cards = initialCards || [];
   const [query, setQuery] = useState('');
@@ -42,7 +53,7 @@ export default function Gallery({ initialCards, emblemVaultedTotal }) {
 
   const artistOptions = useMemo(() => {
     const s = new Set();
-    cards.forEach((c) => c.artist && s.add(c.artist));
+    cards.forEach((c) => c.artist && isRealArtist(c.artist) && s.add(c.artist));
     return [...s].sort((a, b) => a.localeCompare(b));
   }, [cards]);
 
