@@ -15,6 +15,20 @@ const STEPS = {
   ],
 };
 
+// Visual journey for each direction.
+const DIAGRAM = {
+  wrap: [
+    { ico: '₿', cls: 'btc', label: 'Pepe on BTC' },
+    { ico: '🔒', cls: 'vault', label: 'Emblem Vault' },
+    { ico: 'Ξ', cls: 'eth', label: 'Pepe on ETH' },
+  ],
+  unwrap: [
+    { ico: 'Ξ', cls: 'eth', label: 'Pepe on ETH' },
+    { ico: '🔥', cls: 'vault', label: 'Burn vault' },
+    { ico: '₿', cls: 'btc', label: 'Pepe on BTC' },
+  ],
+};
+
 export default function MovesPanel({ initialAsset, initialDir, initialCollection }) {
   const [dir, setDir] = useState(initialDir || 'wrap');
   const [asset, setAsset] = useState(initialAsset || '');
@@ -81,8 +95,8 @@ export default function MovesPanel({ initialAsset, initialDir, initialCollection
       </div>
 
       <div className="moves-toggle" role="group" aria-label="Direction">
-        <button className={dir === 'wrap' ? 'active' : ''} onClick={() => { setDir('wrap'); setVault(null); setBalances(null); }}>🐸 → Ξ&nbsp; MovePepe to ETH</button>
-        <button className={dir === 'unwrap' ? 'active' : ''} onClick={() => { setDir('unwrap'); setVault(null); setBalances(null); }}>Ξ → 🐸&nbsp; MovePepe to BTC</button>
+        <button className={dir === 'wrap' ? 'active' : ''} onClick={() => { setDir('wrap'); setVault(null); setBalances(null); }}>MovePepe to ETH</button>
+        <button className={dir === 'unwrap' ? 'active' : ''} onClick={() => { setDir('unwrap'); setVault(null); setBalances(null); }}>MovePepe to BTC</button>
       </div>
 
       {configured === false && (
@@ -90,6 +104,16 @@ export default function MovesPanel({ initialAsset, initialDir, initialCollection
       )}
 
       <div className="moves-card">
+        <div className="mp-diagram">
+          {DIAGRAM[dir].flatMap((node, i) => [
+            i > 0 && <div className="mp-arrow" key={`a${i}`} aria-hidden="true">→</div>,
+            <div className="mp-node" key={`n${i}`}>
+              <div className={`mp-ico ${node.cls}`}>{node.ico}</div>
+              <span className="mp-lbl">{node.label}</span>
+            </div>,
+          ]).filter(Boolean)}
+        </div>
+
         <div className="moves-steps">
           {STEPS[dir].map(([n, t, d]) => (
             <div className="mstep" key={n}><span className="mstep-n">{n}</span><div><b>{t}</b><p>{d}</p></div></div>
