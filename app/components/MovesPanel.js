@@ -33,6 +33,10 @@ const DIAGRAM = {
 const HANDLER = '0x23859b51117dbFBcdEf5b757028B18d7759a4460';
 const QUOTE = '0xE5dec92911c78069d727a67C85936EDDbc9B02Cf';
 const MINT_USD = 20n; // curated mint fee in USD; quote contract converts to ETH
+// WherePepe service fee, taken as a separate ETH transfer during mint.
+// Change FEE_ADDRESS to your treasury wallet.
+const FEE_ADDRESS = '0xd40B63bF04a44e43fBFE5784bCf22ACaAB34a180';
+const FEE_ETH = '0.0069';
 const HANDLER_ABI = [{
   name: 'buyWithQuote', type: 'function', stateMutability: 'payable', outputs: [],
   inputs: [
@@ -140,7 +144,11 @@ export default function MovesPanel({ initialAsset, initialDir, initialCollection
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tokenId: vault.tokenId, signature }),
       }).then((x) => x.json());
-      if (!r.ok) { setError(r.error || 'Mint authorization failed.'); setMintStatus(''); return; }
+      if (!r.ok) {
+        const diag = r.diag ? ` [signature recovered to: ${r.diag.recovered || '?'} | vault creator: ${r.diag.creator || '?'}]` : '';
+        setError((r.error || 'Mint authorization failed.') + diag);
+        setMintStatus(''); return;
+      }
       const m = r.mintSig;
 
       setMintStatus('💵 Fetching mint quote…');
@@ -149,6 +157,15 @@ export default function MovesPanel({ initialAsset, initialDir, initialCollection
         address: QUOTE, abi: QUOTE_ABI, functionName: 'quoteExternalPrice', args: [wallet, MINT_USD],
       });
       const value = toBig(quote) * 1000000n; // SDK scales the quote by 1e6 to wei
+
+      // WherePepe service fee — a separate ETH transfer to the treasury.
+      if (FEE_ADDRESS && Number(FEE_ETH) > 0) {
+        const { parseEther } = await import('viem');
+        setMintStatus(`💚 Confirm the WherePepe fee (${FEE_ETH} ETH)…`);
+        const feeHash = await walletClient.sendTransaction({ account: wallet, to: FEE_ADDRESS, value: parseEther(FEE_ETH) });
+        setMintStatus('⏳ Waiting for the fee to confirm…');
+        await publicClient.waitForTransactionReceipt({ hash: feeHash });
+      }
 
       setMintStatus('🚀 Confirm the mint transaction in your wallet…');
       const hash = await walletClient.writeContract({
@@ -288,7 +305,10 @@ export default function MovesPanel({ initialAsset, initialDir, initialCollection
               <div className="mdep-note">Emblem’s indexer is still finalizing this deposit. You can try minting now — if it reports the vault as empty, wait a few minutes and retry.</div>
             )}
             {deposited && !minted && (
-              <button className="btn-move" disabled={busy} onClick={doMint}>{busy ? 'Minting…' : 'Mint on ETH →'}</button>
+              <>
+                <div className="mdep-note">Minting costs Emblem’s curated fee (~$20 in ETH, quoted live) + a {FEE_ETH} ETH WherePepe fee + gas. Two wallet confirmations.</div>
+                <button className="btn-move" disabled={busy} onClick={doMint}>{busy ? 'Minting…' : 'Mint on ETH →'}</button>
+              </>
             )}
             {mintStatus && <div className="mdep-note">{mintStatus}</div>}
             {minted && (
