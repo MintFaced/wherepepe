@@ -60,7 +60,7 @@ export default function MovesPanel({ initialAsset, initialDir, initialCollection
     try {
       const r = await fetch('/api/emblem/vault', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ collection, toAddress: wallet }),
+        body: JSON.stringify({ collection, toAddress: wallet, asset }),
       });
       const d = await r.json();
       if (r.status === 503) { setConfigured(false); return; }
