@@ -13,6 +13,7 @@ export default function Header({ right }) {
         </Link>
         <nav className="header-nav">
           <Link href="/">Prices</Link>
+          <Link href="/moves">Moves</Link>
           <ChatNav />
           <ProfileNav />
         </nav>
