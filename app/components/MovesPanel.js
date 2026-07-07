@@ -29,18 +29,23 @@ const DIAGRAM = {
   ],
 };
 
-// Emblem VaultHandler (mint) on Ethereum mainnet.
+// Emblem VaultHandler (mint) + Quote contract on Ethereum mainnet.
 const HANDLER = '0x23859b51117dbFBcdEf5b757028B18d7759a4460';
-const ZERO = '0x0000000000000000000000000000000000000000';
+const QUOTE = '0xE5dec92911c78069d727a67C85936EDDbc9B02Cf';
+const MINT_USD = 20n; // curated mint fee in USD; quote contract converts to ETH
 const HANDLER_ABI = [{
-  name: 'buyWithSignedPrice', type: 'function', stateMutability: 'payable', outputs: [],
+  name: 'buyWithQuote', type: 'function', stateMutability: 'payable', outputs: [],
   inputs: [
-    { name: '_nftAddress', type: 'address' }, { name: '_payment', type: 'address' },
-    { name: '_price', type: 'uint256' }, { name: '_to', type: 'address' },
-    { name: '_tokenId', type: 'uint256' }, { name: '_nonce', type: 'uint256' },
-    { name: '_signature', type: 'bytes' }, { name: 'serialNumber', type: 'bytes' },
-    { name: '_amount', type: 'uint256' },
+    { name: '_nftAddress', type: 'address' }, { name: '_price', type: 'uint256' },
+    { name: '_to', type: 'address' }, { name: '_tokenId', type: 'uint256' },
+    { name: '_nonce', type: 'uint256' }, { name: '_signature', type: 'bytes' },
+    { name: 'serialNumber', type: 'bytes' }, { name: '_amount', type: 'uint256' },
   ],
+}];
+const QUOTE_ABI = [{
+  name: 'quoteExternalPrice', type: 'function', stateMutability: 'view',
+  inputs: [{ name: 'buyer', type: 'address' }, { name: '_usdPrice', type: 'uint256' }],
+  outputs: [{ name: '', type: 'uint256' }],
 }];
 const toBig = (v) => (typeof v === 'bigint' ? v : BigInt(String(v ?? 0)));
 
@@ -138,11 +143,18 @@ export default function MovesPanel({ initialAsset, initialDir, initialCollection
       if (!r.ok) { setError(r.error || 'Mint authorization failed.'); setMintStatus(''); return; }
       const m = r.mintSig;
 
+      setMintStatus('💵 Fetching mint quote…');
+      // The handler charges the mint fee in ETH, quoted live from USD.
+      const quote = await publicClient.readContract({
+        address: QUOTE, abi: QUOTE_ABI, functionName: 'quoteExternalPrice', args: [wallet, MINT_USD],
+      });
+      const value = toBig(quote) * 1000000n; // SDK scales the quote by 1e6 to wei
+
       setMintStatus('🚀 Confirm the mint transaction in your wallet…');
       const hash = await walletClient.writeContract({
-        address: HANDLER, abi: HANDLER_ABI, functionName: 'buyWithSignedPrice',
-        args: [m._nftAddress, ZERO, toBig(m._price), m._to, toBig(m._tokenId), toBig(m._nonce), m._signature, m.serialNumber, 1n],
-        value: toBig(m._price),
+        address: HANDLER, abi: HANDLER_ABI, functionName: 'buyWithQuote',
+        args: [m._nftAddress, toBig(m._price), m._to, toBig(m._tokenId), toBig(m._nonce), m._signature, m.serialNumber, 1n],
+        value,
       });
 
       setMintStatus('⏳ Waiting for confirmation…');
