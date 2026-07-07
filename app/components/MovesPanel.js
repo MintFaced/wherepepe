@@ -144,11 +144,7 @@ export default function MovesPanel({ initialAsset, initialDir, initialCollection
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tokenId: vault.tokenId, signature }),
       }).then((x) => x.json());
-      if (!r.ok) {
-        const diag = r.diag ? ` [signature recovered to: ${r.diag.recovered || '?'} | vault creator: ${r.diag.creator || '?'}]` : '';
-        setError((r.error || 'Mint authorization failed.') + diag);
-        setMintStatus(''); return;
-      }
+      if (!r.ok) { setError(r.error || 'Mint authorization failed.'); setMintStatus(''); return; }
       const m = r.mintSig;
 
       setMintStatus('💵 Fetching mint quote…');
