@@ -29,29 +29,31 @@ const DIAGRAM = {
   ],
 };
 
-// Emblem VaultHandler (mint) + Quote contract on Ethereum mainnet.
+// Emblem VaultHandler (mint) on Ethereum mainnet. The SDK mints via
+// buyWithSignedPrice with value = the server-signed _price (no quote contract).
 const HANDLER = '0x23859b51117dbFBcdEf5b757028B18d7759a4460';
-const QUOTE = '0xE5dec92911c78069d727a67C85936EDDbc9B02Cf';
-const MINT_USD = 20n; // curated mint fee in USD; quote contract converts to ETH
+const ZERO = '0x0000000000000000000000000000000000000000';
 // WherePepe service fee, taken as a separate ETH transfer during mint.
 // Change FEE_ADDRESS to your treasury wallet.
 const FEE_ADDRESS = '0xd40B63bF04a44e43fBFE5784bCf22ACaAB34a180';
 const FEE_ETH = '0.0069';
 const HANDLER_ABI = [{
-  name: 'buyWithQuote', type: 'function', stateMutability: 'payable', outputs: [],
+  name: 'buyWithSignedPrice', type: 'function', stateMutability: 'payable', outputs: [],
   inputs: [
-    { name: '_nftAddress', type: 'address' }, { name: '_price', type: 'uint256' },
-    { name: '_to', type: 'address' }, { name: '_tokenId', type: 'uint256' },
-    { name: '_nonce', type: 'uint256' }, { name: '_signature', type: 'bytes' },
-    { name: 'serialNumber', type: 'bytes' }, { name: '_amount', type: 'uint256' },
+    { name: '_nftAddress', type: 'address' }, { name: '_payment', type: 'address' },
+    { name: '_price', type: 'uint256' }, { name: '_to', type: 'address' },
+    { name: '_tokenId', type: 'uint256' }, { name: '_nonce', type: 'uint256' },
+    { name: '_signature', type: 'bytes' }, { name: 'serialNumber', type: 'bytes' },
+    { name: '_amount', type: 'uint256' },
   ],
 }];
-const QUOTE_ABI = [{
-  name: 'quoteExternalPrice', type: 'function', stateMutability: 'view',
-  inputs: [{ name: 'buyer', type: 'address' }, { name: '_usdPrice', type: 'uint256' }],
-  outputs: [{ name: '', type: 'uint256' }],
-}];
-const toBig = (v) => (typeof v === 'bigint' ? v : BigInt(String(v ?? 0)));
+// Emblem serializes uint256 fields as { hex } (ethers BigNumber), a decimal
+// string, or a number — mirrors the SDK's parseBigIntValue().
+const toBig = (v) => {
+  if (typeof v === 'bigint') return v;
+  if (v && typeof v === 'object' && 'hex' in v) return BigInt(v.hex);
+  return BigInt(String(v ?? 0));
+};
 
 export default function MovesPanel({ initialAsset, initialDir, initialCollection }) {
   const [dir, setDir] = useState(initialDir || 'wrap');
@@ -147,12 +149,10 @@ export default function MovesPanel({ initialAsset, initialDir, initialCollection
       if (!r.ok) { setError(r.error || 'Mint authorization failed.'); setMintStatus(''); return; }
       const m = r.mintSig;
 
-      setMintStatus('💵 Fetching mint quote…');
-      // The handler charges the mint fee in ETH, quoted live from USD.
-      const quote = await publicClient.readContract({
-        address: QUOTE, abi: QUOTE_ABI, functionName: 'quoteExternalPrice', args: [wallet, MINT_USD],
-      });
-      const value = toBig(quote) * 1000000n; // SDK scales the quote by 1e6 to wei
+      // The signed _price IS the exact wei value the handler expects — no quote
+      // contract, no USD→ETH drift (mirrors the SDK's buyWithSignedPrice flow).
+      const price = toBig(m._price);
+      const serial = (typeof m.serialNumber === 'string' && m.serialNumber.startsWith('0x')) ? m.serialNumber : '0x';
 
       // WherePepe service fee — a separate ETH transfer to the treasury.
       if (FEE_ADDRESS && Number(FEE_ETH) > 0) {
@@ -165,9 +165,9 @@ export default function MovesPanel({ initialAsset, initialDir, initialCollection
 
       setMintStatus('🚀 Confirm the mint transaction in your wallet…');
       const hash = await walletClient.writeContract({
-        address: HANDLER, abi: HANDLER_ABI, functionName: 'buyWithQuote',
-        args: [m._nftAddress, toBig(m._price), m._to, toBig(m._tokenId), toBig(m._nonce), m._signature, m.serialNumber, 1n],
-        value,
+        address: HANDLER, abi: HANDLER_ABI, functionName: 'buyWithSignedPrice',
+        args: [m._nftAddress, ZERO, price, m._to, toBig(m._tokenId), toBig(m._nonce), m._signature, serial, 1n],
+        value: price,
       });
 
       setMintStatus('⏳ Waiting for confirmation…');

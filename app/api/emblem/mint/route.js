@@ -32,18 +32,19 @@ export async function POST(request) {
     const creator = await vaultCreator(tid).catch(() => null);
     const signatureValid = recovered && creator && recovered.toLowerCase() === creator.toLowerCase();
 
+    const notLoaded = r?.loaded === false || /not\s*loaded/i.test(String(r?.msg || ''));
     let error;
-    if (signatureValid) {
-      // Signature is correct — Emblem is refusing because it hasn't registered
-      // the deposit yet (vault not live/sealed). This is on Emblem's side.
-      error = 'Your signature is valid, but Emblem hasn’t registered your deposit yet — its indexer is still catching up, so it won’t authorize the mint. Nothing’s wrong on your end; try again in a little while.';
-    } else if (r?.signedByCreator === false) {
+    if (notLoaded) {
+      // Creator + signature are fine; Emblem just hasn't LOADED (registered) the
+      // Counterparty deposit into the vault yet. This is the real gate.
+      error = 'Your deposit isn’t loaded into the vault yet. Emblem hasn’t registered the Counterparty asset in this vault, so it won’t authorize the mint. Once the deposit is loaded (Emblem indexes it), minting will go through.';
+    } else if (r?.signedByCreator === false && !signatureValid) {
       error = `This mint must be signed by the wallet that created the vault (${creator || 'unknown'}). Switch MetaMask’s active account to that wallet and retry.`;
     } else {
       error = r?.msg || r?.error || 'Mint authorization failed.';
     }
     console.error('[MovePepe] mint-sig failed:', JSON.stringify({ recovered, creator, signatureValid, r }).slice(0, 800));
-    return NextResponse.json({ ok: false, error, diag: { recovered, creator, signatureValid, signedByCreator: r?.signedByCreator } }, { status: 200 });
+    return NextResponse.json({ ok: false, error, diag: { recovered, creator, signatureValid, signedByCreator: r?.signedByCreator, loaded: r?.loaded, msg: r?.msg } }, { status: 200 });
   } catch (e) {
     console.error('[MovePepe] mint-sig error:', e?.message || e);
     return NextResponse.json({ ok: false, error: String(e.message || e) }, { status: 500 });
