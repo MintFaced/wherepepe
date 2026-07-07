@@ -29,14 +29,16 @@ const DIAGRAM = {
   ],
 };
 
-// Emblem VaultHandler (mint) on Ethereum mainnet. The SDK mints via
-// buyWithSignedPrice with value = the server-signed _price (no quote contract).
+// Emblem VaultHandler (mint) on Ethereum mainnet — matches the SDK's
+// getHandlerContract (utils.ts). The mint is paid via buyWithSignedPrice:
+// the signer's `_price` is the exact wei msg.value, so no quote contract.
 const HANDLER = '0x23859b51117dbFBcdEf5b757028B18d7759a4460';
-const ZERO = '0x0000000000000000000000000000000000000000';
+const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'; // _payment = native ETH
 // WherePepe service fee, taken as a separate ETH transfer during mint.
 // Change FEE_ADDRESS to your treasury wallet.
 const FEE_ADDRESS = '0xd40B63bF04a44e43fBFE5784bCf22ACaAB34a180';
 const FEE_ETH = '0.0069';
+// ABI matches the SDK's canonical mint call (evm-operations.ts submitMintTransaction).
 const HANDLER_ABI = [{
   name: 'buyWithSignedPrice', type: 'function', stateMutability: 'payable', outputs: [],
   inputs: [
@@ -47,13 +49,17 @@ const HANDLER_ABI = [{
     { name: '_amount', type: 'uint256' },
   ],
 }];
-// Emblem serializes uint256 fields as { hex } (ethers BigNumber), a decimal
-// string, or a number — mirrors the SDK's parseBigIntValue().
+// Port of the SDK's parseBigIntValue (utils.ts): Emblem serializes _price,
+// _tokenId and _nonce as ethers BigNumbers — i.e. `{ hex: '0x…' }` objects.
+// A plain BigInt(String(v)) turns those into "[object Object]" and throws,
+// which is exactly what killed the mint step.
 const toBig = (v) => {
   if (typeof v === 'bigint') return v;
   if (v && typeof v === 'object' && 'hex' in v) return BigInt(v.hex);
   return BigInt(String(v ?? 0));
 };
+// serialNumber is passed on-chain as `bytes`; viem requires 0x-hex.
+const toBytes = (v) => (typeof v === 'string' && v.startsWith('0x') ? v : '0x');
 
 export default function MovesPanel({ initialAsset, initialDir, initialCollection }) {
   const [dir, setDir] = useState(initialDir || 'wrap');
@@ -64,6 +70,7 @@ export default function MovesPanel({ initialAsset, initialDir, initialCollection
   const [busy, setBusy] = useState(false);
   const [vault, setVault] = useState(null);
   const [balances, setBalances] = useState(null);
+  const [loaded, setLoaded] = useState(false); // Emblem has loaded the deposit — the true mint gate
   const [error, setError] = useState('');
   const [minted, setMinted] = useState(null);
   const [mintStatus, setMintStatus] = useState('');
@@ -97,16 +104,19 @@ export default function MovesPanel({ initialAsset, initialDir, initialCollection
   }
 
   async function createVault() {
-    setError(''); setBusy(true); setVault(null); setBalances(null);
+    setError(''); setBusy(true); setVault(null); setBalances(null); setLoaded(false);
     try {
+      // Collection is derived SERVER-SIDE from the asset's allow-list entry
+      // (Rare Pepe / Fake Rares are select collections) — we don't send one.
       const r = await fetch('/api/emblem/vault', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ collection, toAddress: wallet, asset }),
+        body: JSON.stringify({ toAddress: wallet, asset }),
       });
       const d = await r.json();
       if (r.status === 503) { setConfigured(false); return; }
       if (!d.ok) { setError(d.error || 'Could not create the vault.'); return; }
       setVault(d.vault);
+      if (d.vault?.collection) setCollection(d.vault.collection);
     } catch { setError('Network error.'); } finally { setBusy(false); }
   }
 
@@ -118,6 +128,7 @@ export default function MovesPanel({ initialAsset, initialDir, initialCollection
       if (!d.ok) { setError(d.error || 'Check failed.'); return; }
       const b = d.balances || [];
       setBalances(b);
+      setLoaded(Boolean(d.loaded)); // only Emblem's own indexer unlocks the mint
       setDepositSource(d.source || b[0]?.source || '');
       // Recover the BTC deposit address for a resumed (tokenId-only) vault.
       if (d.btcAddress) setVault((v) => (v && !btcAddr(v.addresses) ? { ...v, addresses: [{ coin: 'BTC', address: d.btcAddress }] } : v));
@@ -149,10 +160,10 @@ export default function MovesPanel({ initialAsset, initialDir, initialCollection
       if (!r.ok) { setError(r.error || 'Mint authorization failed.'); setMintStatus(''); return; }
       const m = r.mintSig;
 
-      // The signed _price IS the exact wei value the handler expects — no quote
-      // contract, no USD→ETH drift (mirrors the SDK's buyWithSignedPrice flow).
+      // The signed `_price` IS the msg.value (native ETH; _payment = zero address).
+      // Fields may arrive as `{ hex: '0x…' }` — toBig handles all shapes.
       const price = toBig(m._price);
-      const serial = (typeof m.serialNumber === 'string' && m.serialNumber.startsWith('0x')) ? m.serialNumber : '0x';
+      const value = price;
 
       // WherePepe service fee — a separate ETH transfer to the treasury.
       if (FEE_ADDRESS && Number(FEE_ETH) > 0) {
@@ -166,13 +177,13 @@ export default function MovesPanel({ initialAsset, initialDir, initialCollection
       setMintStatus('🚀 Confirm the mint transaction in your wallet…');
       const hash = await walletClient.writeContract({
         address: HANDLER, abi: HANDLER_ABI, functionName: 'buyWithSignedPrice',
-        args: [m._nftAddress, ZERO, price, m._to, toBig(m._tokenId), toBig(m._nonce), m._signature, serial, 1n],
-        value: price,
+        args: [m._nftAddress, ZERO_ADDRESS, price, m._to, toBig(m._tokenId), toBig(m._nonce), m._signature, toBytes(m.serialNumber), 1n],
+        value,
       });
 
       setMintStatus('⏳ Waiting for confirmation…');
       await publicClient.waitForTransactionReceipt({ hash });
-      setMinted({ hash, nft: m._nftAddress, tokenId: String(m._tokenId) });
+      setMinted({ hash, nft: m._nftAddress, tokenId: toBig(m._tokenId).toString() });
       setMintStatus('');
     } catch (e) {
       setError(e?.shortMessage || e?.details || e?.message || 'Mint failed.');
@@ -197,8 +208,8 @@ export default function MovesPanel({ initialAsset, initialDir, initialCollection
       </div>
 
       <div className="moves-toggle" role="group" aria-label="Direction">
-        <button className={dir === 'wrap' ? 'active' : ''} onClick={() => { setDir('wrap'); setVault(null); setBalances(null); setMyList(null); }}>MovePepe to ETH</button>
-        <button className={dir === 'unwrap' ? 'active' : ''} onClick={() => { setDir('unwrap'); setVault(null); setBalances(null); setMyList(null); }}>MovePepe to BTC</button>
+        <button className={dir === 'wrap' ? 'active' : ''} onClick={() => { setDir('wrap'); setVault(null); setBalances(null); setLoaded(false); setMyList(null); }}>MovePepe to ETH</button>
+        <button className={dir === 'unwrap' ? 'active' : ''} onClick={() => { setDir('unwrap'); setVault(null); setBalances(null); setLoaded(false); setMyList(null); }}>MovePepe to BTC</button>
       </div>
 
       {configured === false && (
@@ -229,15 +240,12 @@ export default function MovesPanel({ initialAsset, initialDir, initialCollection
                 <span>Which Pepe?</span>
                 <input value={asset} onChange={(e) => setAsset(e.target.value.toUpperCase())} placeholder="e.g. FROGDNA" />
               </label>
-              <div className="mcol-toggle">
-                <button className={collection === 'rare-pepe' ? 'active' : ''} onClick={() => setCollection('rare-pepe')}>Rare Pepe</button>
-                <button className={collection === 'fake-rare' ? 'active' : ''} onClick={() => setCollection('fake-rare')}>Fake Rare</button>
-              </div>
+              <div className="mhint" style={{ fontSize: '12px' }}>Collection (Rare Pepe / Fake Rare) is detected automatically from the asset name — only allow-listed assets can be vaulted.</div>
               <button className="btn-connect" onClick={connectWallet}>{wallet ? `🔗 ${wallet.slice(0, 6)}…${wallet.slice(-4)}` : '🔗 Connect ETH wallet (where the NFT lands)'}</button>
               <button className="btn-move" disabled={!asset || !wallet || busy} onClick={createVault}>{busy && !vault ? 'Creating vault…' : 'Create vault & get deposit address'}</button>
               <div className="mresume">
                 <input value={resumeId} onChange={(e) => setResumeId(e.target.value.trim())} placeholder="…or resume a vault: paste its tokenId" />
-                <button className="btn-copy" onClick={() => resumeId && setVault({ tokenId: resumeId, addresses: [] })}>Resume</button>
+                <button className="btn-copy" onClick={() => { if (!resumeId) return; setVault({ tokenId: resumeId, addresses: [] }); setBalances(null); setLoaded(false); }}>Resume</button>
               </div>
               {wallet && <button className="btn-connect" onClick={() => findVaults('created')} disabled={busy}>🔍 Find my created vaults</button>}
               {myList && (
@@ -247,7 +255,7 @@ export default function MovesPanel({ initialAsset, initialDir, initialCollection
                     : myList.map((v) => {
                       const btc = btcAddr(v.addresses);
                       return (
-                        <button key={v.tokenId} className="mvault-item" onClick={() => { setVault({ tokenId: v.tokenId, addresses: v.addresses }); setMyList(null); }}>
+                        <button key={v.tokenId} className="mvault-item" onClick={() => { setVault({ tokenId: v.tokenId, addresses: v.addresses }); setBalances(null); setLoaded(false); setMyList(null); }}>
                           <b>{v.asset || 'Pepe'}</b>
                           {btc ? <code title={btc}>₿ {btc.slice(0, 8)}…{btc.slice(-6)}</code> : <code>{v.tokenId.slice(0, 12)}…</code>}
                           <span>Resume →</span>
@@ -293,16 +301,19 @@ export default function MovesPanel({ initialAsset, initialDir, initialCollection
             )}
             <div className="mdep-row">
               <button className="btn-connect" onClick={checkDeposit} disabled={busy}>{busy ? 'Checking…' : 'Check Pepe is in the vault'}</button>
-              {deposited && (
-                <span className="mdep-ok">✅ {balances[0]?.name || 'Pepe'} is in the vault{depositSource === 'counterparty' ? ' (confirmed on Counterparty)' : ' — ready to mint'}</span>
+              {deposited && loaded && (
+                <span className="mdep-ok">✅ {balances[0]?.name || 'Pepe'} is loaded in the vault{vault.collection ? ` (${vault.collection === 'fake-rare' ? 'Fake Rare' : 'Rare Pepe'})` : ''} — ready to mint</span>
+              )}
+              {deposited && !loaded && (
+                <span className="mdep-ok">🟡 {balances[0]?.name || 'Pepe'} arrived on-chain — waiting for Emblem to load the vault</span>
               )}
             </div>
-            {deposited && depositSource === 'counterparty' && (
-              <div className="mdep-note">Emblem’s indexer is still finalizing this deposit. You can try minting now — if it reports the vault as empty, wait a few minutes and retry.</div>
+            {deposited && !loaded && (
+              <div className="mdep-note">Your Pepe is confirmed on Counterparty, but Emblem hasn’t loaded it into the vault yet — minting unlocks the moment it does. Nothing’s wrong on your end; check again in a few minutes.</div>
             )}
-            {deposited && !minted && (
+            {deposited && loaded && !minted && (
               <>
-                <div className="mdep-note">Minting costs Emblem’s curated fee (~$20 in ETH, quoted live) + a {FEE_ETH} ETH WherePepe fee + gas. Two wallet confirmations.</div>
+                <div className="mdep-note">Minting costs Emblem’s curated fee (priced in ETH by Emblem at mint time) + a {FEE_ETH} ETH WherePepe fee + gas. Two wallet confirmations.</div>
                 <button className="btn-move" disabled={busy} onClick={doMint}>{busy ? 'Minting…' : 'Mint on ETH →'}</button>
               </>
             )}
