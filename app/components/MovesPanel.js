@@ -57,7 +57,18 @@ export default function MovesPanel({ initialAsset, initialDir, initialCollection
   const [minted, setMinted] = useState(null);
   const [mintStatus, setMintStatus] = useState('');
   const [resumeId, setResumeId] = useState('');
+  const [myList, setMyList] = useState(null);
   const pollRef = useRef(null);
+
+  async function findVaults(vaultType = 'created') {
+    if (!wallet) { setError('Connect your ETH wallet first.'); return; }
+    setError(''); setBusy(true); setMyList(null);
+    try {
+      const d = await fetch(`/api/emblem/my-vaults?address=${wallet}&vaultType=${vaultType}`).then((r) => r.json());
+      if (d.ok) setMyList(d.vaults || []);
+      else setError(d.error || 'Could not fetch your vaults.');
+    } catch { setError('Network error.'); } finally { setBusy(false); }
+  }
 
   useEffect(() => {
     fetch('/api/emblem/status').then((r) => r.json()).then((d) => setConfigured(Boolean(d.configured))).catch(() => setConfigured(false));
@@ -150,8 +161,8 @@ export default function MovesPanel({ initialAsset, initialDir, initialCollection
       </div>
 
       <div className="moves-toggle" role="group" aria-label="Direction">
-        <button className={dir === 'wrap' ? 'active' : ''} onClick={() => { setDir('wrap'); setVault(null); setBalances(null); }}>MovePepe to ETH</button>
-        <button className={dir === 'unwrap' ? 'active' : ''} onClick={() => { setDir('unwrap'); setVault(null); setBalances(null); }}>MovePepe to BTC</button>
+        <button className={dir === 'wrap' ? 'active' : ''} onClick={() => { setDir('wrap'); setVault(null); setBalances(null); setMyList(null); }}>MovePepe to ETH</button>
+        <button className={dir === 'unwrap' ? 'active' : ''} onClick={() => { setDir('unwrap'); setVault(null); setBalances(null); setMyList(null); }}>MovePepe to BTC</button>
       </div>
 
       {configured === false && (
@@ -192,12 +203,38 @@ export default function MovesPanel({ initialAsset, initialDir, initialCollection
                 <input value={resumeId} onChange={(e) => setResumeId(e.target.value.trim())} placeholder="…or resume a vault: paste its tokenId" />
                 <button className="btn-copy" onClick={() => resumeId && setVault({ tokenId: resumeId, addresses: [] })}>Resume</button>
               </div>
+              {wallet && <button className="btn-connect" onClick={() => findVaults('created')} disabled={busy}>🔍 Find my created vaults</button>}
+              {myList && (
+                <div className="mvaults">
+                  {myList.length === 0
+                    ? <div className="mdep-note">No created vaults for this wallet yet.</div>
+                    : myList.map((v) => (
+                      <button key={v.tokenId} className="mvault-item" onClick={() => { setVault({ tokenId: v.tokenId, addresses: v.addresses }); setMyList(null); }}>
+                        <b>{v.asset || 'Pepe'}</b><code>{v.tokenId.slice(0, 12)}…</code><span>Resume →</span>
+                      </button>
+                    ))}
+                </div>
+              )}
             </>
           ) : (
             <>
               <p className="mhint">Connect the ETH wallet holding the wrapped Pepe you want to move back to Bitcoin.</p>
               <button className="btn-connect" onClick={connectWallet}>{wallet ? `🔗 ${wallet.slice(0, 6)}…${wallet.slice(-4)}` : '🔗 Connect ETH wallet'}</button>
-              <button className="btn-move" disabled={!wallet} onClick={() => setError('The unwrap (claim) step is being wired + tested next — it burns the vault NFT and returns your Pepe’s private key.')}>Find my wrapped Pepes</button>
+              <button className="btn-move" disabled={!wallet || busy} onClick={() => findVaults('vaulted')}>{busy ? 'Finding…' : 'Find my wrapped Pepes'}</button>
+              {myList && (
+                <div className="mvaults">
+                  {myList.length === 0
+                    ? <div className="mdep-note">No wrapped Pepes found for this wallet.</div>
+                    : myList.map((v) => (
+                      <a key={v.tokenId} className="mvault-item" href={`https://emblem.finance/nft2?id=${v.tokenId}`} target="_blank" rel="noopener">
+                        <b>{v.asset || 'Pepe'}</b><code>{v.tokenId.slice(0, 12)}…</code><span>Unwrap on Emblem ↗</span>
+                      </a>
+                    ))}
+                </div>
+              )}
+              <p className="mhint" style={{ fontSize: '12px', marginTop: '4px' }}>
+                Unwrapping burns the vault NFT and releases your Pepe’s <b>Bitcoin private key</b> (via Emblem’s Torus network). For your security that key-reveal happens on <b>Emblem’s own audited app</b> — WherePepe hands you off rather than ever touching your private key.
+              </p>
             </>
           )}
         </div>

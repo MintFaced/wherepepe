@@ -611,3 +611,9 @@ img.avatar { object-fit: cover; }
 .mresume input { flex: 1; font-size: 13px !important; padding: 10px 12px !important; }
 .mresume .btn-copy { white-space: nowrap; }
 .mdep-tid { word-break: break-all; color: var(--pepe-bright); }
+.mvaults { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+.mvault-item { display: flex; align-items: center; gap: 10px; background: var(--bg); border: 1px solid var(--border-solid); border-radius: 10px; padding: 10px 13px; cursor: pointer; text-align: left; color: var(--text); }
+.mvault-item:hover { border-color: var(--pepe-deep); }
+.mvault-item b { font-size: 14px; }
+.mvault-item code { color: var(--text-dim); font-size: 11px; }
+.mvault-item span { margin-left: auto; color: var(--pepe-bright); font-weight: 700; font-size: 12px; }
