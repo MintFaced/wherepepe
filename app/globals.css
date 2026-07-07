@@ -591,3 +591,6 @@ img.avatar { object-fit: cover; }
 .moves-error { margin-top: 14px; color: #ff8f8f; font-size: 13px; }
 .moves-warn { margin-top: 20px; color: var(--text-dim); font-size: 12.5px; line-height: 1.6; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
 .moves-warn b { color: var(--text); }
+.mdep-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+.mdep-ok { color: var(--pepe-bright); font-weight: 700; font-size: 13px; }
+.moves-deposit .btn-move { margin-top: 12px; width: 100%; }
