@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { verifyVault, upsertVault, hasPcDb, PC_STATES } from '../../../lib/pepecheck';
+import { verifyVault, upsertVault, hasPcDb, PC_STATES, listingContractFor, LEGACY_CONTRACT } from '../../../lib/pepecheck';
 import { hasEmblemKey } from '../../../lib/emblemVault';
 import { COLLECTIONS } from '../../../lib/collections';
 
@@ -38,7 +38,13 @@ export default async function CheckPage({ params }) {
   }
 
   const st = PC_STATES[v.state] || PC_STATES.other;
-  const os = `https://opensea.io/assets/ethereum/0x82c7a8f707110f5fbb16184a5933e9f78a34c6ab/${tokenId}`;
+  // Correct contract for the OpenSea item link: the listing row is authoritative
+  // (curated ERC-1155 vs legacy ERC-721 tokens live on different contracts);
+  // fall back to the collection's curated contract, then legacy.
+  const osContract = (hasPcDb() ? await listingContractFor(tokenId).catch(() => null) : null)
+    || (v.collection ? COLLECTIONS[v.collection]?.contract : null)
+    || LEGACY_CONTRACT;
+  const os = `https://opensea.io/item/ethereum/${osContract}/${tokenId}`;
 
   return (
     <main className="container">
