@@ -57,6 +57,7 @@ export default function MovesPanel({ initialAsset, initialDir, initialCollection
   const [minted, setMinted] = useState(null);
   const [mintStatus, setMintStatus] = useState('');
   const [resumeId, setResumeId] = useState('');
+  const [depositSource, setDepositSource] = useState('');
   const [myList, setMyList] = useState(null);
   const pollRef = useRef(null);
 
@@ -106,6 +107,9 @@ export default function MovesPanel({ initialAsset, initialDir, initialCollection
       if (!d.ok) { setError(d.error || 'Check failed.'); return; }
       const b = d.balances || [];
       setBalances(b);
+      setDepositSource(d.source || b[0]?.source || '');
+      // Recover the BTC deposit address for a resumed (tokenId-only) vault.
+      if (d.btcAddress) setVault((v) => (v && !btcAddr(v.addresses) ? { ...v, addresses: [{ coin: 'BTC', address: d.btcAddress }] } : v));
       if (b.length === 0) {
         setError(`No Pepe detected in the vault yet — Emblem may still be indexing your Counterparty deposit. Give it a minute and check again.${d.raw?.method ? ` (${d.raw.method})` : ''}`);
       }
@@ -151,13 +155,13 @@ export default function MovesPanel({ initialAsset, initialDir, initialCollection
     } finally { setBusy(false); }
   }
 
-  const depositAddr = (() => {
-    const a = vault?.addresses;
+  function btcAddr(a) {
     if (!a) return '';
     const arr = Array.isArray(a) ? a : Object.values(a);
     const btc = arr.find((x) => /btc|bitcoin|counterparty|xcp/i.test((x?.coin || x?.chain || x?.name || x?.network || '')));
     return btc?.address || arr[0]?.address || arr[0] || '';
-  })();
+  }
+  const depositAddr = btcAddr(vault?.addresses);
   const deposited = Array.isArray(balances) && balances.length > 0;
 
   return (
@@ -215,11 +219,16 @@ export default function MovesPanel({ initialAsset, initialDir, initialCollection
                 <div className="mvaults">
                   {myList.length === 0
                     ? <div className="mdep-note">No created vaults for this wallet yet.</div>
-                    : myList.map((v) => (
-                      <button key={v.tokenId} className="mvault-item" onClick={() => { setVault({ tokenId: v.tokenId, addresses: v.addresses }); setMyList(null); }}>
-                        <b>{v.asset || 'Pepe'}</b><code>{v.tokenId.slice(0, 12)}…</code><span>Resume →</span>
-                      </button>
-                    ))}
+                    : myList.map((v) => {
+                      const btc = btcAddr(v.addresses);
+                      return (
+                        <button key={v.tokenId} className="mvault-item" onClick={() => { setVault({ tokenId: v.tokenId, addresses: v.addresses }); setMyList(null); }}>
+                          <b>{v.asset || 'Pepe'}</b>
+                          {btc ? <code title={btc}>₿ {btc.slice(0, 8)}…{btc.slice(-6)}</code> : <code>{v.tokenId.slice(0, 12)}…</code>}
+                          <span>Resume →</span>
+                        </button>
+                      );
+                    })}
                 </div>
               )}
             </>
@@ -259,8 +268,13 @@ export default function MovesPanel({ initialAsset, initialDir, initialCollection
             )}
             <div className="mdep-row">
               <button className="btn-connect" onClick={checkDeposit} disabled={busy}>{busy ? 'Checking…' : 'Check Pepe is in the vault'}</button>
-              {deposited && <span className="mdep-ok">✅ Deposit detected — ready to mint</span>}
+              {deposited && (
+                <span className="mdep-ok">✅ {balances[0]?.name || 'Pepe'} is in the vault{depositSource === 'counterparty' ? ' (confirmed on Counterparty)' : ' — ready to mint'}</span>
+              )}
             </div>
+            {deposited && depositSource === 'counterparty' && (
+              <div className="mdep-note">Emblem’s indexer is still finalizing this deposit. You can try minting now — if it reports the vault as empty, wait a few minutes and retry.</div>
+            )}
             {deposited && !minted && (
               <button className="btn-move" disabled={busy} onClick={doMint}>{busy ? 'Minting…' : 'Mint on ETH →'}</button>
             )}
