@@ -32,19 +32,22 @@ export async function POST(request) {
     const creator = await vaultCreator(tid).catch(() => null);
     const signatureValid = recovered && creator && recovered.toLowerCase() === creator.toLowerCase();
 
-    const notLoaded = r?.loaded === false || /not\s*loaded/i.test(String(r?.msg || ''));
     let error;
+    const notLoaded = r?.loaded === false || /not\s*loaded/i.test(String(r?.msg || r?.error || ''));
     if (notLoaded) {
-      // Creator + signature are fine; Emblem just hasn't LOADED (registered) the
-      // Counterparty deposit into the vault yet. This is the real gate.
-      error = 'Your deposit isn’t loaded into the vault yet. Emblem hasn’t registered the Counterparty asset in this vault, so it won’t authorize the mint. Once the deposit is loaded (Emblem indexes it), minting will go through.';
-    } else if (r?.signedByCreator === false && !signatureValid) {
+      // The honest gate (confirmed live): signature fine, deposit confirmed
+      // on-chain, but Emblem hasn't LOADED it into the vault yet. mint-curated
+      // returns {err:true, signedByCreator:true, loaded:false, msg:"Not Loaded"}.
+      error = 'Your deposit is confirmed on-chain, but Emblem hasn’t loaded it into the vault yet. This clears on its own once Emblem indexes the deposit — nothing’s wrong on your end. Retry in a little while.';
+    } else if (signatureValid) {
+      error = 'Your signature is valid, but Emblem hasn’t registered your deposit yet — its indexer is still catching up, so it won’t authorize the mint. Nothing’s wrong on your end; try again in a little while.';
+    } else if (r?.signedByCreator === false) {
       error = `This mint must be signed by the wallet that created the vault (${creator || 'unknown'}). Switch MetaMask’s active account to that wallet and retry.`;
     } else {
       error = r?.msg || r?.error || 'Mint authorization failed.';
     }
-    console.error('[MovePepe] mint-sig failed:', JSON.stringify({ recovered, creator, signatureValid, r }).slice(0, 800));
-    return NextResponse.json({ ok: false, error, diag: { recovered, creator, signatureValid, signedByCreator: r?.signedByCreator, loaded: r?.loaded, msg: r?.msg } }, { status: 200 });
+    console.error('[MovePepe] mint-sig failed:', JSON.stringify({ recovered, creator, signatureValid, notLoaded, r }).slice(0, 800));
+    return NextResponse.json({ ok: false, error, notLoaded, diag: { recovered, creator, signatureValid, signedByCreator: r?.signedByCreator } }, { status: 200 });
   } catch (e) {
     console.error('[MovePepe] mint-sig error:', e?.message || e);
     return NextResponse.json({ ok: false, error: String(e.message || e) }, { status: 500 });
