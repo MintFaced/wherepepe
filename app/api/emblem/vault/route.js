@@ -36,13 +36,15 @@ export async function POST(request) {
 // `loaded` = Emblem's indexer sees the deposit (the mint-readiness gate);
 // `source: 'counterparty'` = coins provably arrived on-chain but Emblem
 // hasn't loaded them yet — informational only, never mint-gating.
+// `mismatch` = the vault was created into the wrong select collection
+// (recordedProject ≠ expectedProject) and can never mint — recreate it.
 export async function GET(request) {
   if (!hasEmblemKey()) return NextResponse.json({ ok: false, configured: false }, { status: 503 });
   const tokenId = new URL(request.url).searchParams.get('tokenId');
   if (!tokenId) return NextResponse.json({ ok: false, error: 'tokenId required' }, { status: 400 });
   try {
-    const { values, loaded, raw, source, btcAddress } = await vaultStatus(tokenId);
-    return NextResponse.json({ ok: true, balances: values, loaded, raw, source, btcAddress });
+    const { values, loaded, mismatch, asset, recordedProject, expectedProject, raw, source, btcAddress } = await vaultStatus(tokenId);
+    return NextResponse.json({ ok: true, balances: values, loaded, mismatch, asset, recordedProject, expectedProject, raw, source, btcAddress });
   } catch (e) {
     return NextResponse.json({ ok: false, error: String(e.message || e) }, { status: 500 });
   }
