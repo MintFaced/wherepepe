@@ -3,6 +3,7 @@ import { hasEmblemKey, createVault, vaultStatus } from '../../../../lib/emblemVa
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
 const ADDR_RE = /^0x[a-fA-F0-9]{40}$/;
 
@@ -19,6 +20,7 @@ export async function POST(request) {
     const vault = await createVault({ collection, toAddress });
     return NextResponse.json({ ok: true, vault });
   } catch (e) {
+    console.error('[MovePepe] create-vault failed:', e?.message || e);
     return NextResponse.json({ ok: false, error: String(e.message || e) }, { status: 500 });
   }
 }
