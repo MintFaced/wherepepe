@@ -29,6 +29,21 @@ const DIAGRAM = {
   ],
 };
 
+// Emblem VaultHandler (mint) on Ethereum mainnet.
+const HANDLER = '0x23859b51117dbFBcdEf5b757028B18d7759a4460';
+const ZERO = '0x0000000000000000000000000000000000000000';
+const HANDLER_ABI = [{
+  name: 'buyWithSignedPrice', type: 'function', stateMutability: 'payable', outputs: [],
+  inputs: [
+    { name: '_nftAddress', type: 'address' }, { name: '_payment', type: 'address' },
+    { name: '_price', type: 'uint256' }, { name: '_to', type: 'address' },
+    { name: '_tokenId', type: 'uint256' }, { name: '_nonce', type: 'uint256' },
+    { name: '_signature', type: 'bytes' }, { name: 'serialNumber', type: 'bytes' },
+    { name: '_amount', type: 'uint256' },
+  ],
+}];
+const toBig = (v) => (typeof v === 'bigint' ? v : BigInt(String(v ?? 0)));
+
 export default function MovesPanel({ initialAsset, initialDir, initialCollection }) {
   const [dir, setDir] = useState(initialDir || 'wrap');
   const [asset, setAsset] = useState(initialAsset || '');
@@ -39,6 +54,9 @@ export default function MovesPanel({ initialAsset, initialDir, initialCollection
   const [vault, setVault] = useState(null);
   const [balances, setBalances] = useState(null);
   const [error, setError] = useState('');
+  const [minted, setMinted] = useState(null);
+  const [mintStatus, setMintStatus] = useState('');
+  const [resumeId, setResumeId] = useState('');
   const pollRef = useRef(null);
 
   useEffect(() => {
@@ -76,6 +94,43 @@ export default function MovesPanel({ initialAsset, initialDir, initialCollection
       const d = await fetch(`/api/emblem/vault?tokenId=${encodeURIComponent(vault.tokenId)}`).then((r) => r.json());
       if (d.ok) setBalances(d.balances || []);
     } catch { setError('Could not check the vault yet — try again in a moment.'); } finally { setBusy(false); }
+  }
+
+  async function doMint() {
+    setError(''); setMintStatus(''); setBusy(true);
+    try {
+      const { createWalletClient, createPublicClient, custom, http } = await import('viem');
+      const { mainnet } = await import('viem/chains');
+      const walletClient = createWalletClient({ account: wallet, chain: mainnet, transport: custom(window.ethereum) });
+      const publicClient = createPublicClient({ chain: mainnet, transport: http() });
+      try { await walletClient.switchChain({ id: 1 }); } catch { /* already on mainnet */ }
+
+      setMintStatus('✍️ Sign the mint request in your wallet…');
+      const signature = await walletClient.signMessage({ account: wallet, message: `Curated Minting: ${vault.tokenId}` });
+
+      setMintStatus('🔑 Authorizing the mint…');
+      const r = await fetch('/api/emblem/mint', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tokenId: vault.tokenId, signature }),
+      }).then((x) => x.json());
+      if (!r.ok) { setError(r.error || 'Mint authorization failed.'); setMintStatus(''); return; }
+      const m = r.mintSig;
+
+      setMintStatus('🚀 Confirm the mint transaction in your wallet…');
+      const hash = await walletClient.writeContract({
+        address: HANDLER, abi: HANDLER_ABI, functionName: 'buyWithSignedPrice',
+        args: [m._nftAddress, ZERO, toBig(m._price), m._to, toBig(m._tokenId), toBig(m._nonce), m._signature, m.serialNumber, 1n],
+        value: toBig(m._price),
+      });
+
+      setMintStatus('⏳ Waiting for confirmation…');
+      await publicClient.waitForTransactionReceipt({ hash });
+      setMinted({ hash, nft: m._nftAddress, tokenId: String(m._tokenId) });
+      setMintStatus('');
+    } catch (e) {
+      setError(e?.shortMessage || e?.details || e?.message || 'Mint failed.');
+      setMintStatus('');
+    } finally { setBusy(false); }
   }
 
   const depositAddr = (() => {
@@ -133,6 +188,10 @@ export default function MovesPanel({ initialAsset, initialDir, initialCollection
               </div>
               <button className="btn-connect" onClick={connectWallet}>{wallet ? `🔗 ${wallet.slice(0, 6)}…${wallet.slice(-4)}` : '🔗 Connect ETH wallet (where the NFT lands)'}</button>
               <button className="btn-move" disabled={!asset || !wallet || busy} onClick={createVault}>{busy && !vault ? 'Creating vault…' : 'Create vault & get deposit address'}</button>
+              <div className="mresume">
+                <input value={resumeId} onChange={(e) => setResumeId(e.target.value.trim())} placeholder="…or resume a vault: paste its tokenId" />
+                <button className="btn-copy" onClick={() => resumeId && setVault({ tokenId: resumeId, addresses: [] })}>Resume</button>
+              </div>
             </>
           ) : (
             <>
@@ -145,17 +204,33 @@ export default function MovesPanel({ initialAsset, initialDir, initialCollection
 
         {dir === 'wrap' && vault && (
           <div className="moves-deposit">
-            <div className="mdep-k">Send exactly <b>1 {asset}</b> to this Bitcoin address:</div>
-            <div className="mdep-addr">{depositAddr || '(deposit address pending)'}</div>
-            <button className="btn-copy" onClick={() => navigator.clipboard?.writeText(depositAddr)}>Copy address</button>
+            {depositAddr ? (
+              <>
+                <div className="mdep-k">Send exactly <b>1 {asset || 'Pepe'}</b> to this Bitcoin address:</div>
+                <div className="mdep-addr">{depositAddr}</div>
+                <button className="btn-copy" onClick={() => navigator.clipboard?.writeText(depositAddr)}>Copy address</button>
+              </>
+            ) : (
+              <div className="mdep-k">Resumed vault — check the balance, then mint.</div>
+            )}
             <div className="mdep-row">
               <button className="btn-connect" onClick={checkDeposit} disabled={busy}>{busy ? 'Checking…' : 'Check Pepe is in the vault'}</button>
               {deposited && <span className="mdep-ok">✅ Deposit detected — ready to mint</span>}
             </div>
-            {deposited && (
-              <button className="btn-move" onClick={() => setError('Mint step (buyWithSignedPrice) is being wired + tested next — your vault ' + String(vault.tokenId).slice(0, 10) + '… is safe.')}>Mint on ETH →</button>
+            {deposited && !minted && (
+              <button className="btn-move" disabled={busy} onClick={doMint}>{busy ? 'Minting…' : 'Mint on ETH →'}</button>
             )}
-            <div className="mdep-note">Vault <code>{String(vault.tokenId).slice(0, 16)}…</code> created for your wallet.</div>
+            {mintStatus && <div className="mdep-note">{mintStatus}</div>}
+            {minted && (
+              <div className="moves-success">
+                🎉 <b>Pepe moved to Ethereum!</b>
+                <div className="mdep-row">
+                  <a className="btn-connect" href={`https://opensea.io/item/ethereum/${minted.nft}/${minted.tokenId}`} target="_blank" rel="noopener">View on OpenSea ↗</a>
+                  <a className="mdep-tx" href={`https://etherscan.io/tx/${minted.hash}`} target="_blank" rel="noopener">transaction ↗</a>
+                </div>
+              </div>
+            )}
+            <div className="mdep-note">Vault id <code className="mdep-tid">{String(vault.tokenId)}</code> <button className="btn-copy" onClick={() => navigator.clipboard?.writeText(String(vault.tokenId))}>copy</button> — save it to resume this vault later.</div>
           </div>
         )}
 
