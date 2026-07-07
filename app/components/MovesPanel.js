@@ -103,8 +103,15 @@ export default function MovesPanel({ initialAsset, initialDir, initialCollection
     setBusy(true); setError('');
     try {
       const d = await fetch(`/api/emblem/vault?tokenId=${encodeURIComponent(vault.tokenId)}`).then((r) => r.json());
-      if (d.ok) setBalances(d.balances || []);
-    } catch { setError('Could not check the vault yet — try again in a moment.'); } finally { setBusy(false); }
+      if (!d.ok) { setError(d.error || 'Check failed.'); return; }
+      const b = d.balances || [];
+      setBalances(b);
+      if (b.length === 0) {
+        setError(`No Pepe detected in the vault yet — Emblem may still be indexing your Counterparty deposit. Give it a minute and check again.${d.raw?.method ? ` (${d.raw.method})` : ''}`);
+      }
+    } catch {
+      setError('Could not check the vault yet — try again in a moment.');
+    } finally { setBusy(false); }
   }
 
   async function doMint() {

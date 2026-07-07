@@ -36,7 +36,8 @@ export async function GET(request) {
   const tokenId = new URL(request.url).searchParams.get('tokenId');
   if (!tokenId) return NextResponse.json({ ok: false, error: 'tokenId required' }, { status: 400 });
   try {
-    return NextResponse.json({ ok: true, balances: await vaultStatus(tokenId) });
+    const { values, raw } = await vaultStatus(tokenId);
+    return NextResponse.json({ ok: true, balances: values, raw });
   } catch (e) {
     return NextResponse.json({ ok: false, error: String(e.message || e) }, { status: 500 });
   }
