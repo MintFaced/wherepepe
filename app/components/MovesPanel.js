@@ -71,6 +71,7 @@ export default function MovesPanel({ initialAsset, initialDir, initialCollection
   const [vault, setVault] = useState(null);
   const [balances, setBalances] = useState(null);
   const [loaded, setLoaded] = useState(false); // Emblem has loaded the deposit — the true mint gate
+  const [mismatch, setMismatch] = useState(null); // vault created into the wrong collection — can never mint
   const [error, setError] = useState('');
   const [minted, setMinted] = useState(null);
   const [mintStatus, setMintStatus] = useState('');
@@ -83,10 +84,11 @@ export default function MovesPanel({ initialAsset, initialDir, initialCollection
     if (!wallet) { setError('Connect your ETH wallet first.'); return; }
     setError(''); setBusy(true); setMyList(null);
     try {
-      const d = await fetch(`/api/emblem/my-vaults?address=${wallet}&vaultType=${vaultType}`).then((r) => r.json());
-      if (d.ok) setMyList(d.vaults || []);
-      else setError(d.error || 'Could not fetch your vaults.');
-    } catch { setError('Network error.'); } finally { setBusy(false); }
+      const r = await fetch(`/api/emblem/my-vaults?address=${wallet}&vaultType=${vaultType}`);
+      const d = await r.json().catch(() => null);
+      if (d?.ok) setMyList(d.vaults || []);
+      else setError(d?.error || `Could not fetch your vaults (HTTP ${r.status}).`);
+    } catch { setError('Network error while fetching your vaults — try again.'); } finally { setBusy(false); }
   }
 
   useEffect(() => {
@@ -104,7 +106,7 @@ export default function MovesPanel({ initialAsset, initialDir, initialCollection
   }
 
   async function createVault() {
-    setError(''); setBusy(true); setVault(null); setBalances(null); setLoaded(false);
+    setError(''); setBusy(true); setVault(null); setBalances(null); setLoaded(false); setMismatch(null);
     try {
       // Collection is derived SERVER-SIDE from the asset's allow-list entry
       // (Rare Pepe / Fake Rares are select collections) — we don't send one.
@@ -129,6 +131,7 @@ export default function MovesPanel({ initialAsset, initialDir, initialCollection
       const b = d.balances || [];
       setBalances(b);
       setLoaded(Boolean(d.loaded)); // only Emblem's own indexer unlocks the mint
+      setMismatch(d.mismatch ? { asset: d.asset, recorded: d.recordedProject, expected: d.expectedProject } : null);
       setDepositSource(d.source || b[0]?.source || '');
       // Recover the BTC deposit address for a resumed (tokenId-only) vault.
       if (d.btcAddress) setVault((v) => (v && !btcAddr(v.addresses) ? { ...v, addresses: [{ coin: 'BTC', address: d.btcAddress }] } : v));
@@ -208,8 +211,8 @@ export default function MovesPanel({ initialAsset, initialDir, initialCollection
       </div>
 
       <div className="moves-toggle" role="group" aria-label="Direction">
-        <button className={dir === 'wrap' ? 'active' : ''} onClick={() => { setDir('wrap'); setVault(null); setBalances(null); setLoaded(false); setMyList(null); }}>MovePepe to ETH</button>
-        <button className={dir === 'unwrap' ? 'active' : ''} onClick={() => { setDir('unwrap'); setVault(null); setBalances(null); setLoaded(false); setMyList(null); }}>MovePepe to BTC</button>
+        <button className={dir === 'wrap' ? 'active' : ''} onClick={() => { setDir('wrap'); setVault(null); setBalances(null); setLoaded(false); setMismatch(null); setMyList(null); }}>MovePepe to ETH</button>
+        <button className={dir === 'unwrap' ? 'active' : ''} onClick={() => { setDir('unwrap'); setVault(null); setBalances(null); setLoaded(false); setMismatch(null); setMyList(null); }}>MovePepe to BTC</button>
       </div>
 
       {configured === false && (
@@ -245,7 +248,7 @@ export default function MovesPanel({ initialAsset, initialDir, initialCollection
               <button className="btn-move" disabled={!asset || !wallet || busy} onClick={createVault}>{busy && !vault ? 'Creating vault…' : 'Create vault & get deposit address'}</button>
               <div className="mresume">
                 <input value={resumeId} onChange={(e) => setResumeId(e.target.value.trim())} placeholder="…or resume a vault: paste its tokenId" />
-                <button className="btn-copy" onClick={() => { if (!resumeId) return; setVault({ tokenId: resumeId, addresses: [] }); setBalances(null); setLoaded(false); }}>Resume</button>
+                <button className="btn-copy" onClick={() => { if (!resumeId) return; setVault({ tokenId: resumeId, addresses: [] }); setBalances(null); setLoaded(false); setMismatch(null); }}>Resume</button>
               </div>
               {wallet && <button className="btn-connect" onClick={() => findVaults('created')} disabled={busy}>🔍 Find my created vaults</button>}
               {myList && (
@@ -255,7 +258,7 @@ export default function MovesPanel({ initialAsset, initialDir, initialCollection
                     : myList.map((v) => {
                       const btc = btcAddr(v.addresses);
                       return (
-                        <button key={v.tokenId} className="mvault-item" onClick={() => { setVault({ tokenId: v.tokenId, addresses: v.addresses }); setBalances(null); setLoaded(false); setMyList(null); }}>
+                        <button key={v.tokenId} className="mvault-item" onClick={() => { setVault({ tokenId: v.tokenId, addresses: v.addresses }); setBalances(null); setLoaded(false); setMismatch(null); setMyList(null); }}>
                           <b>{v.asset || 'Pepe'}</b>
                           {btc ? <code title={btc}>₿ {btc.slice(0, 8)}…{btc.slice(-6)}</code> : <code>{v.tokenId.slice(0, 12)}…</code>}
                           <span>Resume →</span>
@@ -301,17 +304,22 @@ export default function MovesPanel({ initialAsset, initialDir, initialCollection
             )}
             <div className="mdep-row">
               <button className="btn-connect" onClick={checkDeposit} disabled={busy}>{busy ? 'Checking…' : 'Check Pepe is in the vault'}</button>
-              {deposited && loaded && (
+              {deposited && !mismatch && loaded && (
                 <span className="mdep-ok">✅ {balances[0]?.name || 'Pepe'} is loaded in the vault{vault.collection ? ` (${vault.collection === 'fake-rare' ? 'Fake Rare' : 'Rare Pepe'})` : ''} — ready to mint</span>
               )}
-              {deposited && !loaded && (
+              {deposited && !mismatch && !loaded && (
                 <span className="mdep-ok">🟡 {balances[0]?.name || 'Pepe'} arrived on-chain — waiting for Emblem to load the vault</span>
               )}
             </div>
-            {deposited && !loaded && (
+            {mismatch && (
+              <div className="moves-error">
+                ⛔ <b>This vault can’t mint — it was created into the wrong collection.</b> {mismatch.asset || 'This asset'} belongs to <b>{mismatch.expected}</b>, but the vault was created as <b>{mismatch.recorded}</b>, so Emblem’s allow-list check will always reject it — waiting won’t help. Create a fresh vault for {mismatch.asset || 'the asset'} (the collection is now detected automatically){deposited ? ', and contact Emblem support to recover the coins already deposited in this one — don’t send anything more to its address' : ''}.
+              </div>
+            )}
+            {deposited && !mismatch && !loaded && (
               <div className="mdep-note">Your Pepe is confirmed on Counterparty, but Emblem hasn’t loaded it into the vault yet — minting unlocks the moment it does. Nothing’s wrong on your end; check again in a few minutes.</div>
             )}
-            {deposited && loaded && !minted && (
+            {deposited && !mismatch && loaded && !minted && (
               <>
                 <div className="mdep-note">Minting costs Emblem’s curated fee (priced in ETH by Emblem at mint time) + a {FEE_ETH} ETH WherePepe fee + gas. Two wallet confirmations.</div>
                 <button className="btn-move" disabled={busy} onClick={doMint}>{busy ? 'Minting…' : 'Mint on ETH →'}</button>
