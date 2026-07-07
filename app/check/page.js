@@ -26,17 +26,22 @@ export default async function PepeCheckHome({ searchParams }) {
     const q = new URLSearchParams();
     if (k === 'collection' ? !on : collection) q.set('collection', k === 'collection' ? v : collection);
     if (k === 'state' ? !on : state) q.set('state', k === 'state' ? v : state);
-    return <Link key={k + v} href={`/check?${q}`} className={on ? 'pc-on' : ''}>{label}</Link>;
+    return <Link key={k + v} href={`/check?${q}`} className={`badge ${on ? 'pc-on' : ''}`}>{label}</Link>;
   };
 
   return (
-    <main>
-      <section className="pc-hero">
-        <h1>Don’t buy an <em>empty</em> vault.</h1>
-        <p>Paste any Emblem vault — token ID or OpenSea link — and PepeCheck reads what’s actually inside, straight from Emblem and Counterparty.</p>
-        <form className="pc-form" action={check}>
-          <input name="q" placeholder="Vault token ID or OpenSea URL" autoComplete="off" inputMode="numeric" aria-label="Vault token ID or OpenSea URL" />
-          <button type="submit">Check it</button>
+    <main className="container">
+      <section className="hero">
+        <h1 className="hero-h1">Don’t buy an <span style={{ color: 'var(--pepe)' }}>empty</span> vault.</h1>
+        <p className="hero-sub">
+          <span className="hero-line">Paste any Emblem vault — token ID or OpenSea link —</span>
+          <span className="hero-line">and PepeCheck reads what’s actually inside, straight from Emblem and Counterparty.</span>
+        </p>
+        <form className="pc-checkform" action={check}>
+          <div className="search">
+            <input name="q" placeholder="Vault token ID or OpenSea URL" autoComplete="off" inputMode="numeric" aria-label="Vault token ID or OpenSea URL" />
+          </div>
+          <button type="submit" className="btn-move">Check it</button>
         </form>
       </section>
 
@@ -49,20 +54,24 @@ export default async function PepeCheckHome({ searchParams }) {
       </div>
 
       {rows.length === 0 ? (
-        <p className="pc-empty-note">{hasPcDb() ? 'No listings indexed yet — the crawler runs every 10 minutes. Check a vault directly above in the meantime.' : 'Vault index not configured — the checker above still works.'}</p>
+        <p className="pc-empty-note">{hasPcDb() ? 'No listings match yet — the crawler runs every 10 minutes. Check a vault directly above in the meantime.' : 'Vault index not configured — the checker above still works.'}</p>
       ) : (
-        <div className="pc-grid">
+        <div className="grid">
           {rows.map((r) => {
             const card = lookupBundled(r.card);
             const st = PC_STATES[r.state] ? r.state : 'loading';
             return (
-              <Link key={r.order_hash} href={`/check/${r.token_id}`} className="pc-tile">
-                <span className={`pc-chip pc-s-${st}`}>{PC_STATES[st].label}</span>
-                {card?.image ? <img src={card.image} alt={r.card} loading="lazy" /> : null}
-                <div className="pc-tile-body">
-                  <div className="pc-tile-card">{r.card}</div>
-                  <div className="pc-tile-meta">{COLLECTIONS[r.collection]?.label || 'Emblem vault'} · #{String(r.token_id).slice(0, 8)}…</div>
-                  <div className="pc-tile-price">Ξ {Number(r.price_eth).toFixed(4)}</div>
+              <Link key={r.order_hash} href={`/check/${r.token_id}`} className="tile">
+                <div className="tile-img">
+                  {card?.image ? <img src={card.image} alt={r.card} loading="lazy" /> : null}
+                  <span className={`pc-chip pc-s-${st}`}>{PC_STATES[st].label}</span>
+                </div>
+                <div className="tile-body">
+                  <div className="tile-name">{r.card}</div>
+                  <div className="tile-row">
+                    <span>{COLLECTIONS[r.collection]?.label || 'Emblem vault'}</span>
+                    <b className="pc-price">Ξ {Number(r.price_eth).toFixed(4)}</b>
+                  </div>
                 </div>
               </Link>
             );

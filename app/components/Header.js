@@ -14,6 +14,7 @@ export default function Header({ right }) {
         <nav className="header-nav">
           <Link href="/">Prices</Link>
           <Link href="/moves">Moves</Link>
+          <Link href="/check">Check</Link>
           <ChatNav />
           <ProfileNav />
         </nav>

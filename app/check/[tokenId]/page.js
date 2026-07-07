@@ -14,7 +14,7 @@ export async function generateMetadata({ params }) {
 export default async function CheckPage({ params }) {
   const { tokenId: raw } = await params;
   const tokenId = String(raw).replace(/\D/g, '');
-  if (!hasEmblemKey()) return <main className="pc-sheet"><h1>PepeCheck</h1><p className="pc-blurb">Awaiting configuration.</p></main>;
+  if (!hasEmblemKey()) return <main className="container"><div className="pc-sheet"><div /><div><h1>PepeCheck</h1><p className="pc-blurb">Awaiting configuration.</p></div></div></main>;
 
   let v = null, err = '';
   try {
@@ -24,10 +24,15 @@ export default async function CheckPage({ params }) {
 
   if (!v) {
     return (
-      <main className="pc-sheet">
-        <h1>Vault {tokenId}</h1>
-        <p className="pc-sub">could not verify</p>
-        <p className="pc-blurb">{err || 'Emblem didn’t answer — try again in a moment.'}</p>
+      <main className="container">
+        <div className="pc-sheet">
+          <div />
+          <div>
+            <h1>Vault {tokenId}</h1>
+            <p className="pc-sub">could not verify</p>
+            <p className="pc-blurb">{err || 'Emblem didn’t answer — try again in a moment.'}</p>
+          </div>
+        </div>
       </main>
     );
   }
@@ -36,8 +41,8 @@ export default async function CheckPage({ params }) {
   const os = `https://opensea.io/assets/ethereum/0x82c7a8f707110f5fbb16184a5933e9f78a34c6ab/${tokenId}`;
 
   return (
-    <main className="pc-sheet">
-      <div className="pc-sheet-grid">
+    <main className="container">
+      <div className="pc-sheet">
         <div>{v.image ? <img className="pc-art" src={v.image} alt={v.card || 'vault'} /> : null}</div>
         <div>
           <h1>{v.card || `Vault ${tokenId}`}</h1>
