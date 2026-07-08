@@ -78,16 +78,20 @@ export async function GET(request) {
     }
   }
 
-  // Pass 3 — verify named vaults (newest-unverified first via the stale query).
+  // Pass 3 — verify named vaults, paced to stay under Emblem's rate limits.
+  const sleep = (ms) => new Promise((s) => setTimeout(s, ms));
   for (const row of await staleVaultTokenIds(VERIFY_BUDGET)) {
     try {
-      const v = await verifyVault(row.token_id, { nudge: false });
+      let v;
+      try { v = await verifyVault(row.token_id, { nudge: false }); }
+      catch { await sleep(2500); v = await verifyVault(row.token_id, { nudge: false }); } // one retry
       await upsertVault(row.token_id, row.contract, v);
       report.verified++;
     } catch (e) {
       report.verifyErrors++;
       console.error('[PepeCheck] verify failed', row.token_id, String(e?.message || e).slice(0, 120));
     }
+    await sleep(700); // ~1.4 req/s against Emblem
   }
 
   return NextResponse.json({ ok: true, ...report });
