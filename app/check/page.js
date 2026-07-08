@@ -54,9 +54,11 @@ export default async function PepeCheckHome({ searchParams }) {
       </div>
 
       {rows.length === 0 ? (
-        <p className="pc-empty-note">{hasPcDb() ? 'No listings match yet — the crawler runs every 10 minutes. Check a vault directly above in the meantime.' : 'Vault index not configured — the checker above still works.'}</p>
+        <p className="pc-empty-note">{hasPcDb() ? 'Nothing matches this filter yet — verification runs every 10 minutes. Check a vault directly above in the meantime.' : 'Vault index not configured — the checker above still works.'}</p>
       ) : (
-        <div className="grid">
+        <>
+          <p className="result-meta">Top {rows.length} listed vaults by asking price — tap one for its full check.</p>
+          <div className="grid">
           {rows.map((r) => {
             const card = lookupBundled(r.card);
             const st = PC_STATES[r.state] ? r.state : 'loading';
@@ -76,7 +78,8 @@ export default async function PepeCheckHome({ searchParams }) {
               </Link>
             );
           })}
-        </div>
+          </div>
+        </>
       )}
     </main>
   );
